@@ -57,16 +57,6 @@ class MultiAuthenticationPolicy(object):
         self._policies = policies
         self._callback = callback
 
-    @classmethod
-    def from_settings(cls, settings, prefix="authn."):
-        # Grab out all the settings keys that start with our prefix.
-        authn_settings = {}
-        for name, value in settings.iteritems():
-            if not name.startswith(prefix):
-                continue
-            authn_settings[name[len(prefix):]] = value
-        return cls([], None)
-
     def authenticated_userid(self, request):
         """Find the authenticated userid for this request.
 
@@ -197,7 +187,7 @@ def includeme(config):
     # time to obtain the final list of policies.
     policy_factories = []
     policy_names = settings.get("multiauth.policies", "").split()
-    for policy_name in policy_names:
+    for policy_name in reversed(policy_names):
         if policy_name in policy_definitions:
             # It's a policy defined using a callable.
             # Just append it straight to the list.
@@ -209,8 +199,8 @@ def includeme(config):
             factory = policy_factory_from_include(config, policy_name)
             policy_factories.append((factory, {}))
     # OK.  We now have a list of callbacks which need to be called at
-    # commit time, and will return the policies in the right order.
-    # Register a special action to take care of that.
+    # commit time, and will return the policies in reverse order.
+    # Register a special action to pull them into our list of policies.
     policies = []
     authn_policy = MultiAuthenticationPolicy(policies, groupfinder)
     config.set_authentication_policy(authn_policy)
@@ -218,8 +208,8 @@ def includeme(config):
         for factory, kwds in policy_factories:
             policy = factory(**kwds)
             if policy:
-                if not policies or policy is not policies[-1]:
-                    policies.append(policy)
+                if not policies or policy is not policies[0]:
+                    policies.insert(0, policy)
     config.action(None, grab_policies, order=PHASE2_CONFIG)
     # Also hook up a default AuthorizationPolicy.
     # ACLAuthorizationPolicy is usually what you want.
@@ -235,10 +225,13 @@ def policy_factory_from_include(config, module):
     It does config.include(module), and them sucks out information about
     the authn policy that was registered.
     """
+    # Remember the active policy before including the module, if any.
+    orig_policy = config.registry.queryUtility(IAuthenticationPolicy)
+    # Include the module, so we get any default views etc.
     config.include(module)
     # That might have registered and commited a new policy object.
     policy = config.registry.queryUtility(IAuthenticationPolicy)
-    if policy is not None:
+    if policy is not None and policy is not orig_policy:
         return lambda: policy
     # Or it might have set up a pending action to register one later.
     # Find the most recent IAuthenticationPolicy action, and grab
