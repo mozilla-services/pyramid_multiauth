@@ -13,7 +13,7 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
 requires = ['pyramid', 'unittest2']
 
 setup(name='pyramid_multiauth',
-      version='0.1',
+      version='0.1.0',
       description='pyramid_multiauth',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
@@ -21,9 +21,9 @@ setup(name='pyramid_multiauth',
         "Framework :: Pylons",
         "Topic :: Internet :: WWW/HTTP",
         ],
-      author='',
-      author_email='',
-      url='',
+      author='Mozilla Services',
+      author_email='services-dev@mozilla.org',
+      url='https://github.com/mozilla-services/pyramid_multiauth',
       keywords='web pyramid pylons authentication',
       packages=find_packages(),
       include_package_data=True,

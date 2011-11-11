@@ -78,9 +78,10 @@ class MultiAuthenticationPolicy(object):
         for policy in self._policies:
             userid = policy.authenticated_userid(request)
             if userid is not None:
-                if self._callback is not None:
-                    if self._callback(userid) is not None:
-                        break
+                if self._callback is None:
+                    break
+                if self._callback(userid, request) is not None:
+                    break
         return userid
 
     def unauthenticated_userid(self, request):
@@ -110,9 +111,10 @@ class MultiAuthenticationPolicy(object):
             userid = self.unauthenticated_userid(request)
             if userid is not None:
                 groups = self._callback(userid, request)
-                principals.add(userid)
-                principals.add(Authenticated)
-                principals.update(groups)
+                if groups is not None:
+                    principals.add(userid)
+                    principals.add(Authenticated)
+                    principals.update(groups)
         return list(principals)
 
     def remember(self, request, principal, **kw):
@@ -215,14 +217,17 @@ def includeme(config):
             policy_factories.append((factory, definition))
         else:
             # It's a module to be directly included.
-            factory = policy_factory_from_module(config, policy_name)
+            try:
+                factory = policy_factory_from_module(config, policy_name)
+            except ImportError:
+                err = "pyramid_multiauth: policy %r has no settings "\
+                      "and is not importable" % (policy_name,)
+                raise ValueError(err)
             policy_factories.append((factory, {}))
     # OK.  We now have a list of callbacks which need to be called at
     # commit time, and will return the policies in reverse order.
     # Register a special action to pull them into our list of policies.
     policies = []
-    authn_policy = MultiAuthenticationPolicy(policies, groupfinder)
-    config.set_authentication_policy(authn_policy)
     def grab_policies():  # NOQA
         for factory, kwds in policy_factories:
             policy = factory(**kwds)
@@ -232,6 +237,8 @@ def includeme(config):
                     # So each new policy needs to go at the front.
                     policies.insert(0, policy)
     config.action(None, grab_policies, order=PHASE2_CONFIG)
+    authn_policy = MultiAuthenticationPolicy(policies, groupfinder)
+    config.set_authentication_policy(authn_policy)
 
 
 def policy_factory_from_module(config, module):
@@ -257,8 +264,11 @@ def policy_factory_from_module(config, module):
         if action[0] is not IAuthenticationPolicy:
             continue
         def grab_policy(register=action[1]):  # NOQA
+            old_policy = config.registry.queryUtility(IAuthenticationPolicy)
             register()
-            return config.registry.queryUtility(IAuthenticationPolicy)
+            new_policy = config.registry.queryUtility(IAuthenticationPolicy)
+            config.registry.registerUtility(old_policy, IAuthenticationPolicy)
+            return new_policy
         return grab_policy
     # Or it might not have done *anything*.
     # So return a null policy factory.
