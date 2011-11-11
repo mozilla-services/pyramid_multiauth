@@ -18,7 +18,7 @@
 # the Initial Developer. All Rights Reserved.
 #
 # Contributor(s):
-#   Ryan Kelly (ryan@rfk.id.au)
+#   Ryan Kelly (rkelly@mozilla.com)
 #
 # Alternatively, the contents of this file may be used under the terms of
 # either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -47,8 +47,17 @@ from pyramid.authorization import ACLAuthorizationPolicy
 class MultiAuthenticationPolicy(object):
     """Pyramid authentication policy for stacked authentication.
 
-    This is a pyramid authentication policy that stitches together *other*
-    authentication policies into a flexible auth stack.
+    This is a pyramid authentication policy that stitches together other
+    authentication policies into a flexible auth stack.  You give it a
+    list of IAuthenticationPolicy objects, and it will try each one in 
+    turn until it obtains a usable response:
+
+        * authenticated_userid:    return userid from first successful policy
+        * unauthenticated_userid:  return userid from first successful policy
+        * effective_principals:    return union of principals from all policies
+        * remember:                return headers from all policies
+        * forget:                  return headers from all policies
+
     """
 
     implements(IAuthenticationPolicy)
@@ -109,7 +118,7 @@ class MultiAuthenticationPolicy(object):
     def remember(self, request, principal, **kw):
         """Remember the authenticated userid.
 
-        This method returns the union of the headers returned by each
+        This method returns the concatentation of the headers returned by each
         authn policy.
         """
         headers = []
@@ -120,7 +129,7 @@ class MultiAuthenticationPolicy(object):
     def forget(self, request):
         """Forget a previusly remembered userid.
 
-        This method returns the union of the headers returned by each
+        This method returns the concatentation of the headers returned by each
         authn policy.
         """
         headers = []
@@ -130,16 +139,16 @@ class MultiAuthenticationPolicy(object):
 
 
 def includeme(config):
-    """Include default whoauth settings into a pyramid config.
+    """Include pyramid_multiauth into a pyramid configurator.
 
     This function provides a hook for pyramid to include the default settings
     for auth via pyramid_multiauth.  Activate it like so:
 
         config.include("pyramid_multiauth")
 
-    This will pull the list of registered authn policies from the application
-    settings, and configure and install them in order.  The policies to use
-    can be specified in one of two ways:
+    This will pull the list of registered authn policies from the deployment
+    settings, and configure and install each policy in order.  The policies to
+    use can be specified in one of two ways:
 
         * as the name of a module to be included.
         * as the name of a callable along with a set of parameters.
@@ -168,8 +177,14 @@ def includeme(config):
     """
     # Grab the pyramid-wide settings, to look for any auth config.
     settings = config.get_settings()
+    # Hook up a default AuthorizationPolicy.
+    # ACLAuthorizationPolicy is usually what you want.
+    # If the app configures one explicitly then this will get overridden.
+    # In autocommit mode this needs to be done before setting the authn policy.
+    authz_policy = ACLAuthorizationPolicy()
+    config.set_authorization_policy(authz_policy)
     # Get the groupfinder from config if present.
-    groupfinder = settings.get("multiauth.policy.groupfinder", None)
+    groupfinder = settings.get("multiauth.groupfinder", None)
     groupfinder = config.maybe_dotted(groupfinder)
     # Look for callable policy definitions.
     # Suck them all out at once and store them in a dict for later use.
@@ -185,6 +200,10 @@ def includeme(config):
     # Read and process the list of policies to load.
     # We build up a list of callable which can be executed at config commit
     # time to obtain the final list of policies.
+    # Yeah, it's complicated.  But we want to be ablet to inherit any default
+    # views or other config added by the sub-policies when they're included.
+    # Process policies in reverse order so that things at the front of the
+    # list can override things at the back of the list.
     policy_factories = []
     policy_names = settings.get("multiauth.policies", "").split()
     for policy_name in reversed(policy_names):
@@ -196,7 +215,7 @@ def includeme(config):
             policy_factories.append((factory, definition))
         else:
             # It's a module to be directly included.
-            factory = policy_factory_from_include(config, policy_name)
+            factory = policy_factory_from_module(config, policy_name)
             policy_factories.append((factory, {}))
     # OK.  We now have a list of callbacks which need to be called at
     # commit time, and will return the policies in reverse order.
@@ -209,23 +228,21 @@ def includeme(config):
             policy = factory(**kwds)
             if policy:
                 if not policies or policy is not policies[0]:
+                    # Remember, they're being processed in reverse order.
+                    # So each new policy needs to go at the front.
                     policies.insert(0, policy)
     config.action(None, grab_policies, order=PHASE2_CONFIG)
-    # Also hook up a default AuthorizationPolicy.
-    # ACLAuthorizationPolicy is usually what you want.
-    # If the app configures one explicitly then this will get overridden.
-    authz_policy = ACLAuthorizationPolicy()
-    config.set_authorization_policy(authz_policy)
 
 
-def policy_factory_from_include(config, module):
-    """Create a policy factory by processing a configuration include.
+def policy_factory_from_module(config, module):
+    """Create a policy factory that works by config.include()'ing a module.
 
-    This function does some trickery with the Pyramid config system.
-    It does config.include(module), and them sucks out information about
-    the authn policy that was registered.
+    This function does some trickery with the Pyramid config system. Loosely,
+    it does config.include(module), and then sucks out information about the
+    authn policy that was registered.  It's complicated by pyramid's delayed-
+    commit system, which means we have to do the work via callbacks.
     """
-    # Remember the active policy before including the module, if any.
+    # Remember the policy that's active before including the module, if any.
     orig_policy = config.registry.queryUtility(IAuthenticationPolicy)
     # Include the module, so we get any default views etc.
     config.include(module)
@@ -244,4 +261,5 @@ def policy_factory_from_include(config, module):
             return config.registry.queryUtility(IAuthenticationPolicy)
         return grab_policy
     # Or it might not have done *anything*.
+    # So return a null policy factory.
     return lambda: None
