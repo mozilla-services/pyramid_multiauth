@@ -46,15 +46,23 @@ from pyramid.interfaces import IAuthenticationPolicy
 
 from pyramid_multiauth import MultiAuthenticationPolicy
 
+
+#  Here begins various helper classes and functions for the tests.
+
 class BaseAuthnPolicy(object):
     """A do-nothing base class for authn policies."""
-    implements(IAuthenticationPolicy)    
+
+    implements(IAuthenticationPolicy)
+
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
+
     def authenticated_userid(self, request):
         return self.unauthenticated_userid(request)
+
     def unauthenticated_userid(self, request):
         return None
+
     def effective_principals(self, request):
         principals = [Everyone]
         userid = self.authenticated_userid(request)
@@ -62,39 +70,52 @@ class BaseAuthnPolicy(object):
             principals.append(Authenticated)
             principals.append(userid)
         return principals
+
     def remember(self, request, principal):
         return []
+
     def forget(self, request):
         return []
 
 
 class TestAuthnPolicy1(BaseAuthnPolicy):
     """An authn policy that adds "test1" to the principals."""
-    implements(IAuthenticationPolicy)    
+
+    implements(IAuthenticationPolicy)
+
     def effective_principals(self, request):
         return [Everyone, "test1"]
+
     def remember(self, request, principal):
         return [("X-Remember", principal)]
+
     def forget(self, request):
         return [("X-Forget", "foo")]
 
 
 class TestAuthnPolicy2(BaseAuthnPolicy):
     """An authn policy that sets "test2" as the username."""
-    implements(IAuthenticationPolicy)    
+
+    implements(IAuthenticationPolicy)
+
     def unauthenticated_userid(self, request):
         return "test2"
+
     def remember(self, request, principal):
         return [("X-Remember-2", principal)]
+
     def forget(self, request):
         return [("X-Forget", "bar")]
 
 
 class TestAuthnPolicy3(BaseAuthnPolicy):
     """Authn policy that sets "test3" as the username "test4" in principals."""
-    implements(IAuthenticationPolicy)    
+
+    implements(IAuthenticationPolicy)
+
     def unauthenticated_userid(self, request):
         return "test3"
+
     def effective_principals(self, request):
         return [Everyone, Authenticated, "test3", "test4"]
 
@@ -137,6 +158,9 @@ def testgroupfinder(userid, request):
     return ["group"]
 
 
+#  Here begins the actual test cases
+
+
 class MultiAuthPolicyTests(unittest2.TestCase):
     """Testcases for MultiAuthenticationPolicy and related hooks."""
 
@@ -147,9 +171,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
         pyramid.testing.tearDown()
 
     def test_basic_stacking(self):
-        policies = [
-            TestAuthnPolicy1(), TestAuthnPolicy2()
-        ]
+        policies = [TestAuthnPolicy1(), TestAuthnPolicy2()]
         policy = MultiAuthenticationPolicy(policies)
         request = DummyRequest()
         self.assertEquals(policy.authenticated_userid(request),
@@ -158,9 +180,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
                           [Authenticated, Everyone, "test1", "test2"])
 
     def test_stacking_of_unauthenticated_userid(self):
-        policies = [
-            TestAuthnPolicy2(), TestAuthnPolicy3()
-        ]
+        policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies)
         request = DummyRequest()
         self.assertEquals(policy.unauthenticated_userid(request), "test2")
@@ -168,9 +188,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
         self.assertEquals(policy.unauthenticated_userid(request), "test3")
 
     def test_stacking_of_authenticated_userid(self):
-        policies = [
-            TestAuthnPolicy2(), TestAuthnPolicy3()
-        ]
+        policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies)
         request = DummyRequest()
         self.assertEquals(policy.authenticated_userid(request), "test2")
@@ -178,9 +196,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
         self.assertEquals(policy.authenticated_userid(request), "test3")
 
     def test_stacking_of_authenticated_userid_with_groupdfinder(self):
-        policies = [
-            TestAuthnPolicy2(), TestAuthnPolicy3()
-        ]
+        policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies, testgroupfinder)
         request = DummyRequest()
         self.assertEquals(policy.authenticated_userid(request), "test3")
@@ -188,9 +204,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
         self.assertEquals(policy.unauthenticated_userid(request), "test3")
 
     def test_stacking_of_effective_principals(self):
-        policies = [
-            TestAuthnPolicy2(), TestAuthnPolicy3()
-        ]
+        policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies)
         request = DummyRequest()
         self.assertEquals(sorted(policy.effective_principals(request)),
@@ -204,9 +218,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
                            "test3", "test4"])
 
     def test_stacking_of_effective_principals_with_groupfinder(self):
-        policies = [
-            TestAuthnPolicy2(), TestAuthnPolicy3()
-        ]
+        policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies, testgroupfinder)
         request = DummyRequest()
         self.assertEquals(sorted(policy.effective_principals(request)),
@@ -221,11 +233,8 @@ class MultiAuthPolicyTests(unittest2.TestCase):
                           ["group", Authenticated, Everyone, "test1",
                            "test2", "test3", "test4"])
 
-
     def test_stacking_of_remember_and_forget(self):
-        policies = [
-            TestAuthnPolicy1(), TestAuthnPolicy2(), TestAuthnPolicy3()
-        ]
+        policies = [TestAuthnPolicy1(), TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies)
         request = DummyRequest()
         self.assertEquals(policy.remember(request, "ha"),
@@ -245,7 +254,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
                                 "pyramid_multiauth.tests.testincludeme2 "\
                                 "pyramid_multiauth.tests.testincludemenull "\
                                 "pyramid_multiauth.tests.testincludeme3 "\
-        })
+        })  # NOQA
         self.config.include("pyramid_multiauth")
         self.config.commit()
         policy = self.config.registry.getUtility(IAuthenticationPolicy)
@@ -260,7 +269,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
         self.config.add_view(raiseforbidden, route_name="index")
         app = self.config.make_wsgi_app()
         environ = {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}
-        def start_response(*args):
+        def start_response(*args):  # NOQA
             pass
         result = "".join(app(environ, start_response))
         self.assertEquals(result, '"FORBIDDEN ONE"')
@@ -277,7 +286,7 @@ class MultiAuthPolicyTests(unittest2.TestCase):
                   "bar",
           "multiauth.policy.policy2.use":
                    "pyramid_multiauth.tests.TestAuthnPolicy3"
-        })
+        })  # NOQA
         self.config.include("pyramid_multiauth")
         self.config.commit()
         policy = self.config.registry.getUtility(IAuthenticationPolicy)
@@ -293,9 +302,10 @@ class MultiAuthPolicyTests(unittest2.TestCase):
         self.config.add_view(raiseforbidden, route_name="index")
         app = self.config.make_wsgi_app()
         environ = {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}
-        def start_response(*args):
+        def start_response(*args):  # NOQA
             pass
         result = "".join(app(environ, start_response))
+        self.assertEquals(result, '"FORBIDDEN ONE"')
 
     def test_includeme_with_unconfigured_policy(self):
         self.config.add_settings({

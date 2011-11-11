@@ -49,7 +49,7 @@ class MultiAuthenticationPolicy(object):
 
     This is a pyramid authentication policy that stitches together other
     authentication policies into a flexible auth stack.  You give it a
-    list of IAuthenticationPolicy objects, and it will try each one in 
+    list of IAuthenticationPolicy objects, and it will try each one in
     turn until it obtains a usable response:
 
         * authenticated_userid:    return userid from first successful policy
@@ -190,15 +190,7 @@ def includeme(config):
     groupfinder = config.maybe_dotted(groupfinder)
     # Look for callable policy definitions.
     # Suck them all out at once and store them in a dict for later use.
-    policy_definitions = {}
-    for name, value in settings.iteritems():
-        if not name.startswith("multiauth.policy."):
-            continue
-        name = name[len("multiauth.policy."):]
-        policy_name, setting_name = name.split(".", 1)
-        if policy_name not in policy_definitions:
-            policy_definitions[policy_name] = {}
-        policy_definitions[policy_name][setting_name] = value
+    policy_definitions = get_policy_definitions(settings)
     # Read and process the list of policies to load.
     # We build up a list of callable which can be executed at config commit
     # time to obtain the final list of policies.
@@ -273,3 +265,22 @@ def policy_factory_from_module(config, module):
     # Or it might not have done *anything*.
     # So return a null policy factory.
     return lambda: None
+
+
+def get_policy_definitions(settings):
+    """Call all multiauth policy definitions from the settings dict.
+
+    This function processes the paster deployment settings looking for items
+    that start with "multiauth.policy.<policyname>.".  It pulls them all out
+    into a dict indexed by the policy name.
+    """
+    policy_definitions = {}
+    for name, value in settings.iteritems():
+        if not name.startswith("multiauth.policy."):
+            continue
+        name = name[len("multiauth.policy."):]
+        policy_name, setting_name = name.split(".", 1)
+        if policy_name not in policy_definitions:
+            policy_definitions[policy_name] = {}
+        policy_definitions[policy_name][setting_name] = value
+    return policy_definitions
