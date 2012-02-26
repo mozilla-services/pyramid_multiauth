@@ -168,9 +168,9 @@ def includeme(config):
     # Suck them all out at once and store them in a dict for later use.
     policy_definitions = get_policy_definitions(settings)
     # Read and process the list of policies to load.
-    # We build up a list of callable which can be executed at config commit
+    # We build up a list of callables which can be executed at config commit
     # time to obtain the final list of policies.
-    # Yeah, it's complicated.  But we want to be ablet to inherit any default
+    # Yeah, it's complicated.  But we want to be able to inherit any default
     # views or other config added by the sub-policies when they're included.
     # Process policies in reverse order so that things at the front of the
     # list can override things at the back of the list.
@@ -254,7 +254,7 @@ def policy_factory_from_module(config, module):
 
 
 def get_policy_definitions(settings):
-    """Call all multiauth policy definitions from the settings dict.
+    """Find all multiauth policy definitions from the settings dict.
 
     This function processes the paster deployment settings looking for items
     that start with "multiauth.policy.<policyname>.".  It pulls them all out

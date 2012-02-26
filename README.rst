@@ -9,8 +9,8 @@ authentication policies.
 Overview
 ========
 
-MultiAuthenticationPolicy is a Pyramid authentication that proxies to a
-stack of *other* IAuthenticationPolicy objects, to provide a combined auth
+MultiAuthenticationPolicy is a Pyramid authentication policy that proxies to
+a stack of *other* IAuthenticationPolicy objects, to provide a combined auth
 solution from individual pieces.  Simply pass it a list of policies that
 should be tried in order::
 
