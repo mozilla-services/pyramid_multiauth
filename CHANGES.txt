@@ -1,4 +1,4 @@
-0.2.0 - XXXX-XX-XX
+0.2.0 - 2012-10-04
 ==================
 
 - Add get_policy() method, which can be used to look up the loaded
