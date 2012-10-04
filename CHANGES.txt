@@ -1,3 +1,9 @@
+0.2.0 - XXXX-XX-XX
+==================
+
+- Add get_policy() method, which can be used to look up the loaded
+  sub-policies at runtime.
+
 
 0.1.2 - 2012-01-30
 ==================

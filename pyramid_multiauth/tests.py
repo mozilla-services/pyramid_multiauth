@@ -287,3 +287,32 @@ class MultiAuthPolicyTests(unittest2.TestCase):
                   "bar",
         })
         self.assertRaises(ValueError, self.config.include, "pyramid_multiauth")
+
+    def test_get_policy(self):
+        self.config.add_settings({
+          "multiauth.policies":
+                  "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
+          "multiauth.policy.policy1.use":
+                  "pyramid_multiauth.tests.TestAuthnPolicy2",
+          "multiauth.policy.policy1.foo":
+                  "bar",
+          "multiauth.policy.policy2.use":
+                   "pyramid_multiauth.tests.TestAuthnPolicy3"
+        })
+        self.config.include("pyramid_multiauth")
+        self.config.commit()
+        policy = self.config.registry.getUtility(IAuthenticationPolicy)
+        # Test getting policies by name.
+        self.assertTrue(isinstance(policy.get_policy("policy1"),
+                                   TestAuthnPolicy2))
+        self.assertTrue(isinstance(policy.get_policy("policy2"),
+                                   TestAuthnPolicy3))
+        self.assertEquals(policy.get_policy("policy3"), None)
+        # Test getting policies by class.
+        self.assertTrue(isinstance(policy.get_policy(TestAuthnPolicy1),
+                                   TestAuthnPolicy1))
+        self.assertTrue(isinstance(policy.get_policy(TestAuthnPolicy2),
+                                   TestAuthnPolicy2))
+        self.assertTrue(isinstance(policy.get_policy(TestAuthnPolicy3),
+                                   TestAuthnPolicy3))
+        self.assertEquals(policy.get_policy(MultiAuthPolicyTests), None)

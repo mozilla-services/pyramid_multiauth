@@ -115,6 +115,27 @@ class MultiAuthenticationPolicy(object):
             headers.extend(policy.forget(request))
         return headers
 
+    def get_policy(self, name_or_class):
+        """Get one of the contained authentication policies, by name or class.
+
+        This method can be used to obtain one of the subpolicies loaded
+        by this policy object.  The policy can be looked up either by the
+        name given to it in the config settings, or or by its class.  If
+        no policy is found matching the given query, None is returned.
+
+        This may be useful if you need to access non-standard methods or
+        properties on one of the loaded policy objects.
+        """
+        for policy in self._policies:
+            if isinstance(name_or_class, basestring):
+                policy_name = getattr(policy, "_pyramid_multiauth_name", None)
+                if policy_name == name_or_class:
+                    return policy
+            else:
+                if isinstance(policy, name_or_class):
+                    return policy
+        return None
+
 
 def includeme(config):
     """Include pyramid_multiauth into a pyramid configurator.
@@ -182,7 +203,7 @@ def includeme(config):
             # Just append it straight to the list.
             definition = policy_definitions[policy_name]
             factory = config.maybe_dotted(definition.pop("use"))
-            policy_factories.append((factory, definition))
+            policy_factories.append((factory, policy_name, definition))
         else:
             # It's a module to be directly included.
             try:
@@ -191,15 +212,16 @@ def includeme(config):
                 err = "pyramid_multiauth: policy %r has no settings "\
                       "and is not importable" % (policy_name,)
                 raise ValueError(err)
-            policy_factories.append((factory, {}))
+            policy_factories.append((factory, policy_name, {}))
     # OK.  We now have a list of callbacks which need to be called at
     # commit time, and will return the policies in reverse order.
     # Register a special action to pull them into our list of policies.
     policies = []
     def grab_policies():  # NOQA
-        for factory, kwds in policy_factories:
+        for factory, name, kwds in policy_factories:
             policy = factory(**kwds)
             if policy:
+                policy._pyramid_multiauth_name = name
                 if not policies or policy is not policies[0]:
                     # Remember, they're being processed in reverse order.
                     # So each new policy needs to go at the front.
