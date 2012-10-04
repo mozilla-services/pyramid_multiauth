@@ -2,7 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import unittest2
+import sys
+if sys.version_info < (2, 7):
+    import unittest2 as unittest  # pragma: nocover
+else:
+    import unittest  # pragma: nocover  # NOQA
 
 from zope.interface import implements
 
@@ -129,7 +133,7 @@ def testgroupfinder(userid, request):
 #  Here begins the actual test cases
 
 
-class MultiAuthPolicyTests(unittest2.TestCase):
+class MultiAuthPolicyTests(unittest.TestCase):
     """Testcases for MultiAuthenticationPolicy and related hooks."""
 
     def setUp(self):
