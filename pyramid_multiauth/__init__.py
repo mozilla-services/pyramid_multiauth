@@ -19,6 +19,19 @@ from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
 from pyramid.security import Everyone, Authenticated
 from pyramid.authorization import ACLAuthorizationPolicy
 
+class MultiAuthPolicySelected(object):
+    """ Event for tracking which authentication policy was used.
+
+        from pyramid.events import subscriber
+
+        @subscriber(MultiAuthPolicySelected)
+        def track_policy(event):
+            print("We selected policy %s" % event.policy)
+
+    """
+    def __init__(self, policy):
+        self.policy = policy
+
 
 class MultiAuthenticationPolicy(object):
     """Pyramid authentication policy for stacked authentication.
@@ -54,6 +67,8 @@ class MultiAuthenticationPolicy(object):
         for policy in self._policies:
             userid = policy.authenticated_userid(request)
             if userid is not None:
+                request.registry.notify(MultiAuthPolicySelected(policy))
+
                 if self._callback is None:
                     break
                 if self._callback(userid, request) is not None:
