@@ -1,6 +1,7 @@
 PENDING
 =======
 
+- Support for Python3 via source-level compatibility.
 - Fire a MultiAuthPolicySelected event when a policy is successfully
   used for authentication.
 

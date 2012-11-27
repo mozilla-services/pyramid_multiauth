@@ -13,11 +13,17 @@ __ver_tuple__ = (__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
 __version__ = "%d.%d.%d%s" % __ver_tuple__
 
 
-from zope.interface import implements
+import sys
+
+from zope.interface import implementer
 
 from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
 from pyramid.security import Everyone, Authenticated
 from pyramid.authorization import ACLAuthorizationPolicy
+
+
+if sys.version_info > (3,):  # pragma: nocover
+    basestring = str
 
 
 class MultiAuthPolicySelected(object):
@@ -38,6 +44,7 @@ class MultiAuthPolicySelected(object):
         self.policy = policy
 
 
+@implementer(IAuthenticationPolicy)
 class MultiAuthenticationPolicy(object):
     """Pyramid authentication policy for stacked authentication.
 
@@ -53,8 +60,6 @@ class MultiAuthenticationPolicy(object):
         * forget:                  return headers from all policies
 
     """
-
-    implements(IAuthenticationPolicy)
 
     def __init__(self, policies, callback=None):
         self._policies = policies
@@ -303,9 +308,10 @@ def get_policy_definitions(settings):
     into a dict indexed by the policy name.
     """
     policy_definitions = {}
-    for name, value in settings.iteritems():
+    for name in settings:
         if not name.startswith("multiauth.policy."):
             continue
+        value = settings[name]
         name = name[len("multiauth.policy."):]
         policy_name, setting_name = name.split(".", 1)
         if policy_name not in policy_definitions:

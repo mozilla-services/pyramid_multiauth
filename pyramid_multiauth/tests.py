@@ -8,7 +8,7 @@ if sys.version_info < (2, 7):
 else:
     import unittest  # pragma: nocover  # NOQA
 
-from zope.interface import implements
+from zope.interface import implementer
 
 import pyramid.testing
 from pyramid.testing import DummyRequest
@@ -21,10 +21,9 @@ from pyramid_multiauth import MultiAuthenticationPolicy
 
 #  Here begins various helper classes and functions for the tests.
 
+@implementer(IAuthenticationPolicy)
 class BaseAuthnPolicy(object):
     """A do-nothing base class for authn policies."""
-
-    implements(IAuthenticationPolicy)
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -50,10 +49,9 @@ class BaseAuthnPolicy(object):
         return []
 
 
+@implementer(IAuthenticationPolicy)
 class TestAuthnPolicy1(BaseAuthnPolicy):
     """An authn policy that adds "test1" to the principals."""
-
-    implements(IAuthenticationPolicy)
 
     def effective_principals(self, request):
         return [Everyone, "test1"]
@@ -65,10 +63,9 @@ class TestAuthnPolicy1(BaseAuthnPolicy):
         return [("X-Forget", "foo")]
 
 
+@implementer(IAuthenticationPolicy)
 class TestAuthnPolicy2(BaseAuthnPolicy):
     """An authn policy that sets "test2" as the username."""
-
-    implements(IAuthenticationPolicy)
 
     def unauthenticated_userid(self, request):
         return "test2"
@@ -80,10 +77,9 @@ class TestAuthnPolicy2(BaseAuthnPolicy):
         return [("X-Forget", "bar")]
 
 
+@implementer(IAuthenticationPolicy)
 class TestAuthnPolicy3(BaseAuthnPolicy):
     """Authn policy that sets "test3" as the username "test4" in principals."""
-
-    implements(IAuthenticationPolicy)
 
     def unauthenticated_userid(self, request):
         return "test3"
@@ -264,8 +260,8 @@ class MultiAuthPolicyTests(unittest.TestCase):
         environ = {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}
         def start_response(*args):  # NOQA
             pass
-        result = "".join(app(environ, start_response))
-        self.assertEquals(result, '"FORBIDDEN ONE"')
+        result = b"".join(app(environ, start_response))
+        self.assertEquals(result, b'"FORBIDDEN ONE"')
 
     def test_includeme_by_callable(self):
         self.config.add_settings({
@@ -297,8 +293,8 @@ class MultiAuthPolicyTests(unittest.TestCase):
         environ = {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}
         def start_response(*args):  # NOQA
             pass
-        result = "".join(app(environ, start_response))
-        self.assertEquals(result, '"FORBIDDEN ONE"')
+        result = b"".join(app(environ, start_response))
+        self.assertEquals(result, b'"FORBIDDEN ONE"')
 
     def test_includeme_with_unconfigured_policy(self):
         self.config.add_settings({
