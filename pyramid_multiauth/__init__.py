@@ -19,8 +19,13 @@ from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
 from pyramid.security import Everyone, Authenticated
 from pyramid.authorization import ACLAuthorizationPolicy
 
+
 class MultiAuthPolicySelected(object):
-    """ Event for tracking which authentication policy was used.
+    """Event for tracking which authentication policy was used.
+
+    This event is fired whenever a particular backend policy is successfully
+    used for authentication.  It can be used by other parts of the code in
+    order to act based on the selected policy::
 
         from pyramid.events import subscriber
 

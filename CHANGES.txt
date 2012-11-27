@@ -1,5 +1,8 @@
-NEXT
-====
+PENDING
+=======
+
+- Fire a MultiAuthPolicySelected event when a policy is successfully
+  used for authentication.
 
 
 0.2.0 - 2012-10-04
