@@ -1,5 +1,5 @@
-PENDING
-=======
+0.3.0 - 2012-11-27
+==================
 
 - Support for Python3 via source-level compatibility.
 - Fire a MultiAuthPolicySelected event when a policy is successfully
