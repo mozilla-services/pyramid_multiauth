@@ -151,6 +151,27 @@ class MultiAuthPolicyTests(unittest.TestCase):
         self.assertEquals(sorted(policy.effective_principals(request)),
                           [Authenticated, Everyone, "test1", "test2"])
 
+    def test_policy_selected_event(self):
+        from pyramid.testing import testConfig
+        from pyramid_multiauth import MultiAuthPolicySelected
+
+        policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
+        policy = MultiAuthenticationPolicy(policies)
+
+        selected_policy = []
+
+        def track_policy(event):
+            selected_policy.append(event.policy)
+
+        with testConfig() as config:
+            config.add_subscriber(track_policy, MultiAuthPolicySelected)
+            request = DummyRequest()
+
+            self.assertEquals(policy.authenticated_userid(request), "test2")
+
+        self.assertEquals(selected_policy[0], policies[0])
+        self.assertEquals(len(selected_policy), 1)
+
     def test_stacking_of_unauthenticated_userid(self):
         policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies)
