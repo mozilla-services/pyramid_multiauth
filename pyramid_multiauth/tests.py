@@ -160,7 +160,7 @@ class MultiAuthPolicyTests(unittest.TestCase):
             selected_policy = []
 
             def track_policy(event):
-                selected_policy.append((event.policy, request))
+                selected_policy.append((event.policy, event.request))
 
             config.add_subscriber(track_policy, MultiAuthPolicySelected)
 
