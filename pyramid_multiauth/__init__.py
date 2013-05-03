@@ -109,13 +109,19 @@ class MultiAuthenticationPolicy(object):
         for policy in self._policies:
             principals.update(policy.effective_principals(request))
         if self._callback is not None:
-            userid = self.unauthenticated_userid(request)
-            if userid is not None:
+            principals.discard(Authenticated)
+            groups = None
+            for policy in self._policies:
+                userid = policy.authenticated_userid(request)
+                if userid is None:
+                    continue
                 groups = self._callback(userid, request)
                 if groups is not None:
-                    principals.add(userid)
-                    principals.add(Authenticated)
-                    principals.update(groups)
+                    break
+            if groups is not None:
+                principals.add(userid)
+                principals.add(Authenticated)
+                principals.update(groups)
         return list(principals)
 
     def remember(self, request, principal, **kw):
