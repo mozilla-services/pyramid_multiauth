@@ -40,8 +40,9 @@ class MultiAuthPolicySelected(object):
             print("We selected policy %s" % event.policy)
 
     """
-    def __init__(self, policy):
+    def __init__(self, policy, request):
         self.policy = policy
+        self.request = request
 
 
 @implementer(IAuthenticationPolicy)
@@ -77,7 +78,7 @@ class MultiAuthenticationPolicy(object):
         for policy in self._policies:
             userid = policy.authenticated_userid(request)
             if userid is not None:
-                request.registry.notify(MultiAuthPolicySelected(policy))
+                request.registry.notify(MultiAuthPolicySelected(policy, request))
 
                 if self._callback is None:
                     break
