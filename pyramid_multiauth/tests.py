@@ -88,6 +88,22 @@ class TestAuthnPolicy3(BaseAuthnPolicy):
         return [Everyone, Authenticated, "test3", "test4"]
 
 
+@implementer(IAuthenticationPolicy)
+class TestAuthnPolicyUnauthOnly(BaseAuthnPolicy):
+    """An authn policy that returns an unauthenticated userid but not an
+    authenticated userid, similar to the basic auth policy.
+    """
+
+    def authenticated_userid(self, request):
+        return None
+
+    def unauthenticated_userid(self, request):
+        return "test3"
+
+    def effective_principals(self, request):
+        return [Everyone]
+
+
 def testincludeme1(config):
     """Config include that sets up a TestAuthnPolicy1 and a forbidden view."""
     config.set_authentication_policy(TestAuthnPolicy1())
@@ -195,6 +211,22 @@ class MultiAuthPolicyTests(unittest.TestCase):
         policies.reverse()
         self.assertEquals(policy.unauthenticated_userid(request), "test3")
 
+    def test_only_unauthenticated_userid_with_groupfinder(self):
+        policies = [TestAuthnPolicyUnauthOnly()]
+        policy = MultiAuthenticationPolicy(policies, testgroupfinder)
+        request = DummyRequest()
+        self.assertEquals(policy.unauthenticated_userid(request), "test3")
+        self.assertEquals(policy.authenticated_userid(request), None)
+        self.assertEquals(policy.effective_principals(request), [Everyone])
+
+    def test_authenticated_userid_unauthenticated_with_groupfinder(self):
+        policies = [TestAuthnPolicy2()]
+        policy = MultiAuthenticationPolicy(policies, testgroupfinder)
+        request = DummyRequest()
+        self.assertEquals(policy.authenticated_userid(request), "test2")
+        self.assertEquals(sorted(policy.effective_principals(request)),
+                          [Everyone, 'test2'])
+
     def test_stacking_of_effective_principals(self):
         policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies)
@@ -214,7 +246,7 @@ class MultiAuthPolicyTests(unittest.TestCase):
         policy = MultiAuthenticationPolicy(policies, testgroupfinder)
         request = DummyRequest()
         self.assertEquals(sorted(policy.effective_principals(request)),
-                          [Authenticated, Everyone, "test2",
+                          ["group", Authenticated, Everyone, "test2",
                            "test3", "test4"])
         policies.reverse()
         self.assertEquals(sorted(policy.effective_principals(request)),
