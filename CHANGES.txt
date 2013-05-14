@@ -3,6 +3,8 @@ PENDING
 
 * MultiAuthPolicySelected events now include the request object, so you
   can e.g. access the registry from the handler function.
+* Fixed some edge-cases in merging effective_principals with the output
+  of the groupfinder callback.
 
 
 0.3.0 - 2012-11-27
