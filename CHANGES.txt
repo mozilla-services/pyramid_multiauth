@@ -5,6 +5,13 @@ PENDING
 - ???
 
 
+0.3.2 - 2013-05-29
+==================
+
+- Fix some merge bustage; this should contain all the things that were
+  *claimed* to be contained in the 0.3.1 release, but in fact were not.
+
+
 0.3.1 - 2013-05-15
 ==================
 
