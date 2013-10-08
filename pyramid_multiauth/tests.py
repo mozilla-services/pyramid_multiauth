@@ -223,7 +223,7 @@ class MultiAuthPolicyTests(unittest.TestCase):
         policies = [TestAuthnPolicy2()]
         policy = MultiAuthenticationPolicy(policies, testgroupfinder)
         request = DummyRequest()
-        self.assertEquals(policy.authenticated_userid(request), "test2")
+        self.assertEquals(policy.authenticated_userid(request), None)
         self.assertEquals(sorted(policy.effective_principals(request)),
                           [Everyone, 'test2'])
 

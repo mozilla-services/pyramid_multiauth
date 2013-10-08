@@ -84,6 +84,8 @@ class MultiAuthenticationPolicy(object):
                     break
                 if self._callback(userid, request) is not None:
                     break
+                else:
+                    userid = None
         return userid
 
     def unauthenticated_userid(self, request):
