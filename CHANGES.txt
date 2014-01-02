@@ -1,8 +1,8 @@
 
-PENDING
-=======
+0.4.0 - 2014-01-02
+==================
 
-- ???
+- Make authenticated_userid None when groupfinder returns None.
 
 
 0.3.2 - 2013-05-29
