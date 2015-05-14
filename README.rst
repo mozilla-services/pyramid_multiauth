@@ -71,3 +71,14 @@ standard config.include() mechanism.
 The end result would be a system that authenticates users via BrowserID, and
 assigns additional principal identifiers based on the originating IP address
 of the request.
+
+If necessary, the *group finder function* and the *authorization policy* can
+also be specified from configuration::
+
+    [app:pyramidapp]
+    use = egg:mypyramidapp
+
+    multiauth.authorization_policy = mypyramidapp.acl.Custom
+    multiauth.groupfinder  = mypyramidapp.acl.groupfinder
+
+    ...

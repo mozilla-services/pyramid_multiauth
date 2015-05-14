@@ -10,11 +10,12 @@ else:
 
 from zope.interface import implementer
 
+import pyramid.authorization
 import pyramid.testing
 from pyramid.testing import DummyRequest
 from pyramid.security import Everyone, Authenticated
 from pyramid.exceptions import Forbidden
-from pyramid.interfaces import IAuthenticationPolicy
+from pyramid.interfaces import IAuthenticationPolicy, IAuthorizationPolicy
 
 from pyramid_multiauth import MultiAuthenticationPolicy
 
@@ -102,6 +103,15 @@ class TestAuthnPolicyUnauthOnly(BaseAuthnPolicy):
 
     def effective_principals(self, request):
         return [Everyone]
+
+
+@implementer(IAuthorizationPolicy)
+class TestAuthzPolicyCustom(object):
+    def permits(self, context, principals, permission):
+        return True
+
+    def principals_allowed_by_permission(self, context, permission):
+        raise NotImplementedError()  # pragma: nocover
 
 
 def testincludeme1(config):
@@ -270,6 +280,23 @@ class MultiAuthPolicyTests(unittest.TestCase):
                          [("X-Remember-2", "ha"), ("X-Remember", "ha")])
         self.assertEquals(policy.forget(request),
                          [("X-Forget", "bar"), ("X-Forget", "foo")])
+
+    def test_includeme_uses_acl_authorization_by_default(self):
+        self.config.include("pyramid_multiauth")
+        self.config.commit()
+        policy = self.config.registry.getUtility(IAuthorizationPolicy)
+        expected = pyramid.authorization.ACLAuthorizationPolicy
+        self.assertTrue(isinstance(policy, expected))
+
+    def test_includeme_reads_authorization_from_settings(self):
+        self.config.add_settings({
+            "multiauth.authorization_policy": "pyramid_multiauth.tests."\
+                                              "TestAuthzPolicyCustom"
+        })
+        self.config.include("pyramid_multiauth")
+        self.config.commit()
+        policy = self.config.registry.getUtility(IAuthorizationPolicy)
+        self.assertTrue(isinstance(policy, TestAuthzPolicyCustom))
 
     def test_includeme_by_module(self):
         self.config.add_settings({
