@@ -19,7 +19,6 @@ from zope.interface import implementer
 
 from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
 from pyramid.security import Everyone, Authenticated
-from pyramid.authorization import ACLAuthorizationPolicy
 
 
 if sys.version_info > (3,):  # pragma: nocover
@@ -207,14 +206,23 @@ def includeme(config):
 
     As a side-effect, the configuration will also get the additional views
     that pyramid_browserid sets up by default.
+
+    The *group finder function* and the *authorization policy* are also read
+    from configuration if specified:
+
+        multiauth.authorization_policy = mypyramidapp.acl.Custom
+        multiauth.groupfinder  = mypyramidapp.acl.groupfinder
     """
     # Grab the pyramid-wide settings, to look for any auth config.
     settings = config.get_settings()
     # Hook up a default AuthorizationPolicy.
-    # ACLAuthorizationPolicy is usually what you want.
+    # Get the authorization policy from config if present.
+    # Default ACLAuthorizationPolicy is usually what you want.
+    authz_class = settings.get("multiauth.authorization_policy",
+                               "pyramid.authorization.ACLAuthorizationPolicy")
+    authz_policy = config.maybe_dotted(authz_class)()
     # If the app configures one explicitly then this will get overridden.
     # In autocommit mode this needs to be done before setting the authn policy.
-    authz_policy = ACLAuthorizationPolicy()
     config.set_authorization_policy(authz_policy)
     # Get the groupfinder from config if present.
     groupfinder = settings.get("multiauth.groupfinder", None)
