@@ -4,3 +4,4 @@ List of contributors:
 * John Anderson <sontek@gmail.com>
 * Laurence Rowe <laurence@lrowe.co.uk>
 * Mathieu Leplatre <mathieu@mozilla.com>
+* Rémy Hubscher <natim@mozilla.com>

@@ -16,7 +16,7 @@ if sys.version_info < (2, 7):
     requires.append("unittest2")
 
 setup(name='pyramid_multiauth',
-      version='0.4.0',
+      version='0.5.0',
       description='pyramid_multiauth',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
