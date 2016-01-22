@@ -179,6 +179,8 @@ class MultiAuthPolicyTests(unittest.TestCase):
 
         policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
         policy = MultiAuthenticationPolicy(policies)
+        # Simulate loading from config:
+        policies[0]._pyramid_multiauth_name = "name"
 
         with testConfig() as config:
             request = DummyRequest()
@@ -186,15 +188,15 @@ class MultiAuthPolicyTests(unittest.TestCase):
             selected_policy = []
 
             def track_policy(event):
-                selected_policy.append((event.policy, event.request))
+                selected_policy.append(event)
 
             config.add_subscriber(track_policy, MultiAuthPolicySelected)
 
-
             self.assertEquals(policy.authenticated_userid(request), "test2")
 
-            self.assertEquals(selected_policy[0][0], policies[0])
-            self.assertEquals(selected_policy[0][1], request)
+            self.assertEquals(selected_policy[0].policy, policies[0])
+            self.assertEquals(selected_policy[0].policy_name, "name")
+            self.assertEquals(selected_policy[0].request, request)
             self.assertEquals(len(selected_policy), 1)
 
     def test_stacking_of_unauthenticated_userid(self):
