@@ -1,7 +1,8 @@
 0.6.0 - unreleased
 ==================
 
-- Nothing changed yet.
+- Provide the policy name used in settings in the ``MultiAuthPolicySelected``
+  event.
 
 
 0.5.0 - 2015-05-19
