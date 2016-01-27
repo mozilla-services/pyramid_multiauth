@@ -1,4 +1,4 @@
-0.6.0 - unreleased
+0.6.0 (2016-01-27)
 ==================
 
 - Provide the policy name used in settings in the ``MultiAuthPolicySelected``
