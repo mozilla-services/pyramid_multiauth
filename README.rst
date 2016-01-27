@@ -82,3 +82,22 @@ also be specified from configuration::
     multiauth.groupfinder  = mypyramidapp.acl.groupfinder
 
     ...
+
+
+MultiAuthPolicySelected Event
+=============================
+
+An event is triggered when one of the multiple policies configured is selected.
+
+::
+
+    from pyramid_multiauth import MultiAuthPolicySelected
+
+
+    # Track policy used, for prefixing user_id and for logging.
+    def on_policy_selected(event):
+        print("%s (%s) was selected for request %s" % (event.policy_name,
+                                                       event.policy,
+                                                       event.request))
+
+    config.add_subscriber(on_policy_selected, MultiAuthPolicySelected)

@@ -41,6 +41,7 @@ class MultiAuthPolicySelected(object):
     """
     def __init__(self, policy, request):
         self.policy = policy
+        self.policy_name = getattr(policy, "_pyramid_multiauth_name", None)
         self.request = request
 
 
