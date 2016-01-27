@@ -78,7 +78,8 @@ class MultiAuthenticationPolicy(object):
         for policy in self._policies:
             userid = policy.authenticated_userid(request)
             if userid is not None:
-                request.registry.notify(MultiAuthPolicySelected(policy, request))
+                request.registry.notify(MultiAuthPolicySelected(policy,
+                                                                request))
 
                 if self._callback is None:
                     break
@@ -260,7 +261,8 @@ def includeme(config):
     # commit time, and will return the policies in reverse order.
     # Register a special action to pull them into our list of policies.
     policies = []
-    def grab_policies():  # NOQA
+
+    def grab_policies():
         for factory, name, kwds in policy_factories:
             policy = factory(**kwds)
             if policy:
@@ -269,6 +271,7 @@ def includeme(config):
                     # Remember, they're being processed in reverse order.
                     # So each new policy needs to go at the front.
                     policies.insert(0, policy)
+
     config.action(None, grab_policies, order=PHASE2_CONFIG)
     authn_policy = MultiAuthenticationPolicy(policies, groupfinder)
     config.set_authentication_policy(authn_policy)
@@ -305,13 +308,15 @@ def policy_factory_from_module(config, module):
         # If it's not setting the authn policy, keep looking.
         if discriminator is not IAuthenticationPolicy:
             continue
+
         # Otherwise, wrap it up so we can extract the registered object.
-        def grab_policy(register=callable):  # NOQA
+        def grab_policy(register=callable):
             old_policy = config.registry.queryUtility(IAuthenticationPolicy)
             register()
             new_policy = config.registry.queryUtility(IAuthenticationPolicy)
             config.registry.registerUtility(old_policy, IAuthenticationPolicy)
             return new_policy
+
         return grab_policy
     # Or it might not have done *anything*.
     # So return a null policy factory.
