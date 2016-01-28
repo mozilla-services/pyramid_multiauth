@@ -4,6 +4,12 @@
 """
 Pyramid authn policy that ties together multiple backends.
 """
+import sys
+
+from zope.interface import implementer
+
+from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
+from pyramid.security import Everyone, Authenticated
 
 __ver_major__ = 0
 __ver_minor__ = 4
@@ -11,14 +17,6 @@ __ver_patch__ = 0
 __ver_sub__ = ""
 __ver_tuple__ = (__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
 __version__ = "%d.%d.%d%s" % __ver_tuple__
-
-
-import sys
-
-from zope.interface import implementer
-
-from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
-from pyramid.security import Everyone, Authenticated
 
 
 if sys.version_info > (3,):  # pragma: nocover

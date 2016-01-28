@@ -3,11 +3,6 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import sys
-if sys.version_info < (2, 7):
-    import unittest2 as unittest  # pragma: nocover
-else:
-    import unittest  # pragma: nocover
-
 from zope.interface import implementer
 
 import pyramid.authorization
@@ -18,6 +13,11 @@ from pyramid.exceptions import Forbidden
 from pyramid.interfaces import IAuthenticationPolicy, IAuthorizationPolicy
 
 from pyramid_multiauth import MultiAuthenticationPolicy
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest  # pragma: nocover
+else:
+    import unittest  # pragma: nocover
 
 
 #  Here begins various helper classes and functions for the tests.
