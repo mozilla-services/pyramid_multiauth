@@ -3,11 +3,6 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import sys
-if sys.version_info < (2, 7):
-    import unittest2 as unittest  # pragma: nocover
-else:
-    import unittest  # pragma: nocover  # NOQA
-
 from zope.interface import implementer
 
 import pyramid.authorization
@@ -18,6 +13,11 @@ from pyramid.exceptions import Forbidden
 from pyramid.interfaces import IAuthenticationPolicy, IAuthorizationPolicy
 
 from pyramid_multiauth import MultiAuthenticationPolicy
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest  # pragma: nocover
+else:
+    import unittest  # pragma: nocover
 
 
 #  Here begins various helper classes and functions for the tests.
@@ -117,8 +117,10 @@ class TestAuthzPolicyCustom(object):
 def testincludeme1(config):
     """Config include that sets up a TestAuthnPolicy1 and a forbidden view."""
     config.set_authentication_policy(TestAuthnPolicy1())
-    def forbidden_view(request):  # NOQA
+
+    def forbidden_view(request):
         return "FORBIDDEN ONE"
+
     config.add_view(forbidden_view,
                     renderer="json",
                     context="pyramid.exceptions.Forbidden")
@@ -274,14 +276,14 @@ class MultiAuthPolicyTests(unittest.TestCase):
         policy = MultiAuthenticationPolicy(policies)
         request = DummyRequest()
         self.assertEquals(policy.remember(request, "ha"),
-                         [("X-Remember", "ha"), ("X-Remember-2", "ha")])
+                          [("X-Remember", "ha"), ("X-Remember-2", "ha")])
         self.assertEquals(policy.forget(request),
-                         [("X-Forget", "foo"), ("X-Forget", "bar")])
+                          [("X-Forget", "foo"), ("X-Forget", "bar")])
         policies.reverse()
         self.assertEquals(policy.remember(request, "ha"),
-                         [("X-Remember-2", "ha"), ("X-Remember", "ha")])
+                          [("X-Remember-2", "ha"), ("X-Remember", "ha")])
         self.assertEquals(policy.forget(request),
-                         [("X-Forget", "bar"), ("X-Forget", "foo")])
+                          [("X-Forget", "bar"), ("X-Forget", "foo")])
 
     def test_includeme_uses_acl_authorization_by_default(self):
         self.config.include("pyramid_multiauth")
@@ -292,8 +294,8 @@ class MultiAuthPolicyTests(unittest.TestCase):
 
     def test_includeme_reads_authorization_from_settings(self):
         self.config.add_settings({
-            "multiauth.authorization_policy": "pyramid_multiauth.tests."\
-                                              "TestAuthzPolicyCustom"
+            "multiauth.authorization_policy": "pyramid_multiauth.tests."
+            "TestAuthzPolicyCustom"
         })
         self.config.include("pyramid_multiauth")
         self.config.commit()
@@ -302,12 +304,12 @@ class MultiAuthPolicyTests(unittest.TestCase):
 
     def test_includeme_by_module(self):
         self.config.add_settings({
-          "multiauth.groupfinder": "pyramid_multiauth.tests.testgroupfinder",
-          "multiauth.policies": "pyramid_multiauth.tests.testincludeme1 "\
-                                "pyramid_multiauth.tests.testincludeme2 "\
-                                "pyramid_multiauth.tests.testincludemenull "\
-                                "pyramid_multiauth.tests.testincludeme3 "\
-        })  # NOQA
+            "multiauth.groupfinder": "pyramid_multiauth.tests.testgroupfinder",
+            "multiauth.policies": "pyramid_multiauth.tests.testincludeme1 "
+                                  "pyramid_multiauth.tests.testincludeme2 "
+                                  "pyramid_multiauth.tests.testincludemenull "
+                                  "pyramid_multiauth.tests.testincludeme3 "
+        })
         self.config.include("pyramid_multiauth")
         self.config.commit()
         policy = self.config.registry.getUtility(IAuthenticationPolicy)
@@ -322,24 +324,26 @@ class MultiAuthPolicyTests(unittest.TestCase):
         self.config.add_view(raiseforbidden, route_name="index")
         app = self.config.make_wsgi_app()
         environ = {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}
-        def start_response(*args):  # NOQA
+
+        def start_response(*args):
             pass
+
         result = b"".join(app(environ, start_response))
         self.assertEquals(result, b'"FORBIDDEN ONE"')
 
     def test_includeme_by_callable(self):
         self.config.add_settings({
-          "multiauth.groupfinder":
-                  "pyramid_multiauth.tests.testgroupfinder",
-          "multiauth.policies":
-                  "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
-          "multiauth.policy.policy1.use":
-                  "pyramid_multiauth.tests.TestAuthnPolicy2",
-          "multiauth.policy.policy1.foo":
-                  "bar",
-          "multiauth.policy.policy2.use":
-                   "pyramid_multiauth.tests.TestAuthnPolicy3"
-        })  # NOQA
+            "multiauth.groupfinder":
+                "pyramid_multiauth.tests.testgroupfinder",
+            "multiauth.policies":
+                "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
+            "multiauth.policy.policy1.use":
+                "pyramid_multiauth.tests.TestAuthnPolicy2",
+            "multiauth.policy.policy1.foo":
+                "bar",
+            "multiauth.policy.policy2.use":
+                "pyramid_multiauth.tests.TestAuthnPolicy3"
+        })
         self.config.include("pyramid_multiauth")
         self.config.commit()
         policy = self.config.registry.getUtility(IAuthenticationPolicy)
@@ -355,34 +359,36 @@ class MultiAuthPolicyTests(unittest.TestCase):
         self.config.add_view(raiseforbidden, route_name="index")
         app = self.config.make_wsgi_app()
         environ = {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}
-        def start_response(*args):  # NOQA
+
+        def start_response(*args):
             pass
+
         result = b"".join(app(environ, start_response))
         self.assertEquals(result, b'"FORBIDDEN ONE"')
 
     def test_includeme_with_unconfigured_policy(self):
         self.config.add_settings({
-          "multiauth.groupfinder":
-                  "pyramid_multiauth.tests.testgroupfinder",
-          "multiauth.policies":
-                  "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
-          "multiauth.policy.policy1.use":
-                  "pyramid_multiauth.tests.TestAuthnPolicy2",
-          "multiauth.policy.policy1.foo":
-                  "bar",
+            "multiauth.groupfinder":
+                "pyramid_multiauth.tests.testgroupfinder",
+            "multiauth.policies":
+                "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
+            "multiauth.policy.policy1.use":
+                "pyramid_multiauth.tests.TestAuthnPolicy2",
+            "multiauth.policy.policy1.foo":
+                "bar",
         })
         self.assertRaises(ValueError, self.config.include, "pyramid_multiauth")
 
     def test_get_policy(self):
         self.config.add_settings({
-          "multiauth.policies":
-                  "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
-          "multiauth.policy.policy1.use":
-                  "pyramid_multiauth.tests.TestAuthnPolicy2",
-          "multiauth.policy.policy1.foo":
-                  "bar",
-          "multiauth.policy.policy2.use":
-                   "pyramid_multiauth.tests.TestAuthnPolicy3"
+            "multiauth.policies":
+                "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
+            "multiauth.policy.policy1.use":
+                "pyramid_multiauth.tests.TestAuthnPolicy2",
+            "multiauth.policy.policy1.foo":
+                "bar",
+            "multiauth.policy.policy2.use":
+                "pyramid_multiauth.tests.TestAuthnPolicy3"
         })
         self.config.include("pyramid_multiauth")
         self.config.commit()

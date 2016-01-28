@@ -4,6 +4,12 @@
 """
 Pyramid authn policy that ties together multiple backends.
 """
+import sys
+
+from zope.interface import implementer
+
+from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
+from pyramid.security import Everyone, Authenticated
 
 __ver_major__ = 0
 __ver_minor__ = 4
@@ -11,14 +17,6 @@ __ver_patch__ = 0
 __ver_sub__ = ""
 __ver_tuple__ = (__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
 __version__ = "%d.%d.%d%s" % __ver_tuple__
-
-
-import sys
-
-from zope.interface import implementer
-
-from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
-from pyramid.security import Everyone, Authenticated
 
 
 if sys.version_info > (3,):  # pragma: nocover
@@ -78,7 +76,8 @@ class MultiAuthenticationPolicy(object):
         for policy in self._policies:
             userid = policy.authenticated_userid(request)
             if userid is not None:
-                request.registry.notify(MultiAuthPolicySelected(policy, request))
+                request.registry.notify(MultiAuthPolicySelected(policy,
+                                                                request))
 
                 if self._callback is None:
                     break
@@ -260,7 +259,8 @@ def includeme(config):
     # commit time, and will return the policies in reverse order.
     # Register a special action to pull them into our list of policies.
     policies = []
-    def grab_policies():  # NOQA
+
+    def grab_policies():
         for factory, name, kwds in policy_factories:
             policy = factory(**kwds)
             if policy:
@@ -269,6 +269,7 @@ def includeme(config):
                     # Remember, they're being processed in reverse order.
                     # So each new policy needs to go at the front.
                     policies.insert(0, policy)
+
     config.action(None, grab_policies, order=PHASE2_CONFIG)
     authn_policy = MultiAuthenticationPolicy(policies, groupfinder)
     config.set_authentication_policy(authn_policy)
@@ -305,13 +306,15 @@ def policy_factory_from_module(config, module):
         # If it's not setting the authn policy, keep looking.
         if discriminator is not IAuthenticationPolicy:
             continue
+
         # Otherwise, wrap it up so we can extract the registered object.
-        def grab_policy(register=callable):  # NOQA
+        def grab_policy(register=callable):
             old_policy = config.registry.queryUtility(IAuthenticationPolicy)
             register()
             new_policy = config.registry.queryUtility(IAuthenticationPolicy)
             config.registry.registerUtility(old_policy, IAuthenticationPolicy)
             return new_policy
+
         return grab_policy
     # Or it might not have done *anything*.
     # So return a null policy factory.
