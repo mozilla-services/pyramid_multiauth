@@ -148,6 +148,16 @@ class MultiAuthenticationPolicy(object):
             headers.extend(policy.forget(request))
         return headers
 
+    def get_policies(self):
+        """Get the list of contained authentication policies, as tuple of
+        name and instances.
+
+        This may be useful to instrospect the configured policies, and their
+        respective name defined in configuration.
+        """
+        return [(getattr(policy, "_pyramid_multiauth_name", None), policy)
+                for policy in self._policies]
+
     def get_policy(self, name_or_class):
         """Get one of the contained authentication policies, by name or class.
 

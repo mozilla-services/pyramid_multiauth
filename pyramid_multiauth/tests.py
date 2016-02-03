@@ -407,3 +407,25 @@ class MultiAuthPolicyTests(unittest.TestCase):
         self.assertTrue(isinstance(policy.get_policy(TestAuthnPolicy3),
                                    TestAuthnPolicy3))
         self.assertEquals(policy.get_policy(MultiAuthPolicyTests), None)
+
+    def test_get_policies(self):
+        self.config.add_settings({
+            "multiauth.policies":
+                "pyramid_multiauth.tests.testincludeme1 policy1 policy2",
+            "multiauth.policy.policy1.use":
+                "pyramid_multiauth.tests.TestAuthnPolicy2",
+            "multiauth.policy.policy2.use":
+                "pyramid_multiauth.tests.TestAuthnPolicy3"
+        })
+        self.config.include("pyramid_multiauth")
+        self.config.commit()
+        policy = self.config.registry.getUtility(IAuthenticationPolicy)
+        policies = policy.get_policies()
+        expected_result = [
+            ("pyramid_multiauth.tests.testincludeme1", TestAuthnPolicy1),
+            ("policy1", TestAuthnPolicy2),
+            ("policy2", TestAuthnPolicy3),
+        ]
+        for (obtained, expected) in zip(policies, expected_result):
+            self.assertEquals(obtained[0], expected[0])
+            self.assertTrue(isinstance(obtained[1], expected[1]))
