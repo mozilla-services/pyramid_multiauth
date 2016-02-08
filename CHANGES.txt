@@ -1,7 +1,8 @@
 0.7.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add ``get_policies()`` method to retrieve the list of contained authentication
+  policies and their respective names.
 
 
 0.6.0 (2016-01-27)
