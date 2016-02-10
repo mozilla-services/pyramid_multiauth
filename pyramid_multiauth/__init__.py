@@ -119,6 +119,9 @@ class MultiAuthenticationPolicy(object):
                 userid = policy.authenticated_userid(request)
                 if userid is None:
                     continue
+                request.registry.notify(MultiAuthPolicySelected(policy,
+                                                                request,
+                                                                userid))
                 groups = self._callback(userid, request)
                 if groups is not None:
                     break
