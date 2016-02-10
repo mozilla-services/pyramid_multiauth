@@ -96,8 +96,9 @@ An event is triggered when one of the multiple policies configured is selected.
 
     # Track policy used, for prefixing user_id and for logging.
     def on_policy_selected(event):
-        print("%s (%s) was selected for request %s" % (event.policy_name,
-                                                       event.policy,
-                                                       event.request))
+        print("%s (%s) authenticated %s for request %s" % (event.policy_name,
+                                                           event.policy,
+                                                           event.userid,
+                                                           event.request))
 
     config.add_subscriber(on_policy_selected, MultiAuthPolicySelected)

@@ -198,6 +198,7 @@ class MultiAuthPolicyTests(unittest.TestCase):
 
             self.assertEquals(selected_policy[0].policy, policies[0])
             self.assertEquals(selected_policy[0].policy_name, "name")
+            self.assertEquals(selected_policy[0].userid, "test2")
             self.assertEquals(selected_policy[0].request, request)
             self.assertEquals(len(selected_policy), 1)
 
