@@ -37,7 +37,7 @@ class MultiAuthPolicySelected(object):
             print("We selected policy %s" % event.policy)
 
     """
-    def __init__(self, policy, request, userid):
+    def __init__(self, policy, request, userid=None):
         self.policy = policy
         self.policy_name = getattr(policy, "_pyramid_multiauth_name", None)
         self.request = request
