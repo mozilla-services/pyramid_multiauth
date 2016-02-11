@@ -7,7 +7,9 @@
 0.8.0 (2016-02-11)
 ==================
 
-- Nothing changed yet.
+- Provide ``userid`` attribute in ``MultiAuthPolicySelected`` event.
+- Always notify event when user is identified with authenticated_userid()
+  (i.e. through ``effective_principals()`` with group finder callback).
 
 
 0.7.0 (2016-02-09)
