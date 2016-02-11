@@ -37,10 +37,11 @@ class MultiAuthPolicySelected(object):
             print("We selected policy %s" % event.policy)
 
     """
-    def __init__(self, policy, request):
+    def __init__(self, policy, request, userid=None):
         self.policy = policy
         self.policy_name = getattr(policy, "_pyramid_multiauth_name", None)
         self.request = request
+        self.userid = userid
 
 
 @implementer(IAuthenticationPolicy)
@@ -77,7 +78,8 @@ class MultiAuthenticationPolicy(object):
             userid = policy.authenticated_userid(request)
             if userid is not None:
                 request.registry.notify(MultiAuthPolicySelected(policy,
-                                                                request))
+                                                                request,
+                                                                userid))
 
                 if self._callback is None:
                     break
@@ -117,6 +119,9 @@ class MultiAuthenticationPolicy(object):
                 userid = policy.authenticated_userid(request)
                 if userid is None:
                     continue
+                request.registry.notify(MultiAuthPolicySelected(policy,
+                                                                request,
+                                                                userid))
                 groups = self._callback(userid, request)
                 if groups is not None:
                     break

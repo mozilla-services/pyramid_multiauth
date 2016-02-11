@@ -198,8 +198,16 @@ class MultiAuthPolicyTests(unittest.TestCase):
 
             self.assertEquals(selected_policy[0].policy, policies[0])
             self.assertEquals(selected_policy[0].policy_name, "name")
+            self.assertEquals(selected_policy[0].userid, "test2")
             self.assertEquals(selected_policy[0].request, request)
             self.assertEquals(len(selected_policy), 1)
+
+            # Effective principals also triggers an event when groupfinder
+            # is provided.
+            policy_with_group = MultiAuthenticationPolicy(policies,
+                                                          lambda u, r: ['foo'])
+            policy_with_group.effective_principals(request)
+            self.assertEquals(len(selected_policy), 2)
 
     def test_stacking_of_unauthenticated_userid(self):
         policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
