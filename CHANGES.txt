@@ -1,7 +1,7 @@
-0.8.1 (unreleased)
+0.9.0 (2016-11-07)
 ==================
 
-- Nothing changed yet.
+- Drop support for python 2.6
 
 
 0.8.0 (2016-02-11)
