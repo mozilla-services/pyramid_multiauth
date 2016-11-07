@@ -12,8 +12,6 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
 requires = ['pyramid']
-if sys.version_info < (2, 7):
-    requires.append("unittest2")
 
 setup(name='pyramid_multiauth',
       version='0.8.1.dev0',
