@@ -134,7 +134,7 @@ class MultiAuthenticationPolicy(object):
     def remember(self, request, principal, **kw):
         """Remember the authenticated userid.
 
-        This method returns the concatentation of the headers returned by each
+        This method returns the concatenation of the headers returned by each
         authn policy.
         """
         headers = []
@@ -145,7 +145,7 @@ class MultiAuthenticationPolicy(object):
     def forget(self, request):
         """Forget a previusly remembered userid.
 
-        This method returns the concatentation of the headers returned by each
+        This method returns the concatenation of the headers returned by each
         authn policy.
         """
         headers = []
