@@ -11,7 +11,10 @@ from pyramid.authorization import (
     ACLAuthorizationPolicy, Authenticated, Everyone
 )
 from pyramid.exceptions import Forbidden
-from pyramid.interfaces import IAuthenticationPolicy, IAuthorizationPolicy
+from pyramid.interfaces import (
+    IAuthenticationPolicy, IAuthorizationPolicy, ISecurityPolicy
+)
+from pyramid.security import LegacySecurityPolicy
 
 from pyramid_multiauth import MultiAuthenticationPolicy
 
@@ -433,3 +436,40 @@ class MultiAuthPolicyTests(unittest.TestCase):
         for (obtained, expected) in zip(policies, expected_result):
             self.assertEqual(obtained[0], expected[0])
             self.assertTrue(isinstance(obtained[1], expected[1]))
+
+    def test_default_security(self):
+        self.config.add_settings({
+            "multiauth.policies": "pyramid_multiauth.tests.testincludeme1"
+        })
+        self.config.include("pyramid_multiauth")
+        self.config.commit()
+
+        authn = self.config.registry.getUtility(IAuthenticationPolicy)
+        self.assertTrue(isinstance(authn, MultiAuthenticationPolicy), authn)
+        authz = self.config.registry.getUtility(IAuthorizationPolicy)
+        self.assertTrue(isinstance(authz, ACLAuthorizationPolicy), authz)
+        security = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertTrue(isinstance(security, LegacySecurityPolicy), security)
+
+    def test_custom_security(self):
+        class CustomSecurity:
+            # Fake security class, didn't bother to implement interface.
+            pass
+
+        # Use an authentication from module.
+        self.config.add_settings({
+            "multiauth.policies": "pyramid_multiauth.tests.testincludeme1"
+        })
+        # Will grab the authentication policy setup during include.
+        self.config.include("pyramid_multiauth")
+        # Set custom security (will override LegacySecurityPolicy).
+        self.config.set_security_policy(CustomSecurity())
+        self.config.commit()
+
+        # Check that registered authentication and security are appropriate.
+        authn = self.config.registry.getUtility(IAuthenticationPolicy)
+        self.assertTrue(isinstance(authn, MultiAuthenticationPolicy))
+        authz = self.config.registry.getUtility(IAuthorizationPolicy)
+        self.assertTrue(isinstance(authz, ACLAuthorizationPolicy), authz)
+        security = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertTrue(isinstance(security, CustomSecurity))

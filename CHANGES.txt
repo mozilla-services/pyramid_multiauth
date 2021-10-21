@@ -1,7 +1,10 @@
 1.0.1 (unreleased)
 ==================
 
-- Nothing changed yet.
+**Bug Fixes**
+
+- Fix the `ConfigurationError` about authentication and authorization conflicting
+  with the default security when loading various policies via their module name.
 
 
 1.0.0 (2021-10-21)

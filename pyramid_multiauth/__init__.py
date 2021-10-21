@@ -8,8 +8,11 @@ import sys
 
 from zope.interface import implementer
 
-from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
+from pyramid.interfaces import (
+    IAuthenticationPolicy, ISecurityPolicy, PHASE2_CONFIG
+)
 from pyramid.authorization import Everyone, Authenticated
+from pyramid.security import LegacySecurityPolicy
 
 __ver_major__ = 0
 __ver_minor__ = 9
@@ -324,10 +327,28 @@ def policy_factory_from_module(config, module):
 
         # Otherwise, wrap it up so we can extract the registered object.
         def grab_policy(register=callable):
+            # In Pyramid 2.0, a default security policy is registered when
+            # none is found:
+            # https://github.com/Pylons/pyramid/blob/8061fce/src/pyramid/config/security.py#L100-L101
+            # When including various policies, this can result in
+            # `ConfigurationError`s since we're not supposed to set
+            # authentication once a security policy is already in place.
+            # Clean-up this side-effect manually here.
+            security = config.registry.queryUtility(ISecurityPolicy)
+            if isinstance(security, LegacySecurityPolicy):
+                config.registry.registerUtility(None, ISecurityPolicy)
+
             old_policy = config.registry.queryUtility(IAuthenticationPolicy)
             register()
             new_policy = config.registry.queryUtility(IAuthenticationPolicy)
             config.registry.registerUtility(old_policy, IAuthenticationPolicy)
+
+            # Clean-up the side-effect of the default security policy
+            # here too, after executing the actions via `register()`.
+            security = config.registry.queryUtility(ISecurityPolicy)
+            if isinstance(security, LegacySecurityPolicy):
+                config.registry.registerUtility(None, ISecurityPolicy)
+
             return new_policy
 
         return grab_policy
