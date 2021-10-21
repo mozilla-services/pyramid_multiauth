@@ -1,0 +1,38 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+name: Unit Testing
+jobs:
+  chore:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toxenv: [py37, py38, py39, flake8]
+        include:
+          - toxenv: py37
+            python-version: "3.7"
+          - toxenv: py38
+            python-version: "3.8"
+          - toxenv: py39
+            python-version: "3.9"
+          - toxenv: flake8
+            python-version: "3.X"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install tox
+
+      - name: Run Tox
+        run: |
+          tox -e ${{ matrix.toxenv }}
