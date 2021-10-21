@@ -32,5 +32,4 @@ setup(name='pyramid_multiauth',
       zip_safe=False,
       install_requires=requires,
       tests_require=requires,
-      test_suite="pyramid_multiauth",
-      paster_plugins=['pyramid'])
+      test_suite="pyramid_multiauth")
