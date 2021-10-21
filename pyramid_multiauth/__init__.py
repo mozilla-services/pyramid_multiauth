@@ -9,7 +9,7 @@ import sys
 from zope.interface import implementer
 
 from pyramid.interfaces import IAuthenticationPolicy, PHASE2_CONFIG
-from pyramid.security import Everyone, Authenticated
+from pyramid.authorization import Everyone, Authenticated
 
 __ver_major__ = 0
 __ver_minor__ = 9

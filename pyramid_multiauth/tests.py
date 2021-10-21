@@ -5,10 +5,9 @@
 import unittest
 from zope.interface import implementer
 
-import pyramid.authorization
 import pyramid.testing
 from pyramid.testing import DummyRequest
-from pyramid.security import Everyone, Authenticated
+from pyramid.authorization import ACLAuthorizationPolicy, Authenticated, Everyone
 from pyramid.exceptions import Forbidden
 from pyramid.interfaces import IAuthenticationPolicy, IAuthorizationPolicy
 
@@ -292,7 +291,7 @@ class MultiAuthPolicyTests(unittest.TestCase):
         self.config.include("pyramid_multiauth")
         self.config.commit()
         policy = self.config.registry.getUtility(IAuthorizationPolicy)
-        expected = pyramid.authorization.ACLAuthorizationPolicy
+        expected = ACLAuthorizationPolicy
         self.assertTrue(isinstance(policy, expected))
 
     def test_includeme_reads_authorization_from_settings(self):

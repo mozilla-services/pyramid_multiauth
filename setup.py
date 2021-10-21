@@ -11,7 +11,7 @@ with open(os.path.join(here, 'README.rst')) as f:
 with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
-requires = ['pyramid']
+requires = ['pyramid>=2,<3']
 
 setup(name='pyramid_multiauth',
       version='0.9.0',
