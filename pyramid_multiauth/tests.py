@@ -7,7 +7,9 @@ from zope.interface import implementer
 
 import pyramid.testing
 from pyramid.testing import DummyRequest
-from pyramid.authorization import ACLAuthorizationPolicy, Authenticated, Everyone
+from pyramid.authorization import (
+    ACLAuthorizationPolicy, Authenticated, Everyone
+)
 from pyramid.exceptions import Forbidden
 from pyramid.interfaces import IAuthenticationPolicy, IAuthorizationPolicy
 
