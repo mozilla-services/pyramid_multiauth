@@ -313,14 +313,9 @@ def policy_factory_from_module(config, module):
     # Find the most recent IAuthenticationPolicy action, and grab
     # out the registering function so we can call it ourselves.
     for action in reversed(config.action_state.actions):
-        # Extract the discriminator and callable.  This is complicated by
-        # Pyramid 1.3 changing action from a tuple to a dict.
-        try:
-            discriminator = action["discriminator"]
-            callable = action["callable"]
-        except TypeError:              # pragma: nocover
-            discriminator = action[0]  # pragma: nocover
-            callable = action[1]       # pragma: nocover
+        # Extract the discriminator and callable.
+        discriminator = action["discriminator"]
+        callable = action["callable"]
         # If it's not setting the authn policy, keep looking.
         if discriminator is not IAuthenticationPolicy:
             continue
