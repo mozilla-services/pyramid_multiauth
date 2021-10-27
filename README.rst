@@ -2,13 +2,13 @@
 pyramid_multiauth
 =================
 
-|pypi| |travis|
+|pypi| |ci|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/pyramid_multiauth.svg
     :target: https://pypi.python.org/pypi/pyramid_multiauth
 
-.. |travis| image:: https://travis-ci.org/mozilla-services/pyramid_multiauth.svg?branch=master
-    :target: https://travis-ci.org/mozilla-services/pyramid_multiauth
+.. |ci| image:: https://github.com/mozilla-services/pyramid_multiauth/actions/workflows/test.yml/badge.svg
+    :target: https://github.com/mozilla-services/pyramid_multiauth/actions
 
 
 An authentication policy for Pyramid that proxies to a stack of other
