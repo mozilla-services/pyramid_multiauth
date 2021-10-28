@@ -6,6 +6,14 @@
 - Fix the `ConfigurationError` about authentication and authorization conflicting
   with the default security when loading various policies via their module name.
 
+**Internal Changes**
+
+- Migrate CI from CircleCI to Github Actions
+- Tox: add py3.7 and py3.9 support
+- Remove code for Pyramid < 1.3
+- Use ``assertEqual()`` in tests
+- Drop support of Python 2.7
+
 
 1.0.0 (2021-10-21)
 ==================
