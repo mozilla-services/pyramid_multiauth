@@ -14,7 +14,7 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
 requires = ['pyramid>=2,<3']
 
 setup(name='pyramid_multiauth',
-      version='1.0.1.dev0',
+      version='1.0.1',
       description='pyramid_multiauth',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
