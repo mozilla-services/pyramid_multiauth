@@ -74,7 +74,7 @@ module into your configurator::
 In this example you would get a MultiAuthenticationPolicy with three stacked
 auth policies.  The first two, ipauth1 and ipauth2, are defined as the name of
 of a callable along with a set of keyword arguments.  The third is defined as
-the name of a module, pyramid_browserid, which will be procecesed via the
+the name of a module, pyramid_browserid, which will be processed via the
 standard config.include() mechanism.
 
 The end result would be a system that authenticates users via BrowserID, and
