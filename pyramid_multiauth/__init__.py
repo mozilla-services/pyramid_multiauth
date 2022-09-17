@@ -146,7 +146,7 @@ class MultiAuthenticationPolicy(object):
         return headers
 
     def forget(self, request):
-        """Forget a previusly remembered userid.
+        """Forget a previously remembered userid.
 
         This method returns the concatenation of the headers returned by each
         authn policy.
@@ -160,7 +160,7 @@ class MultiAuthenticationPolicy(object):
         """Get the list of contained authentication policies, as tuple of
         name and instances.
 
-        This may be useful to instrospect the configured policies, and their
+        This may be useful to introspect the configured policies, and their
         respective name defined in configuration.
         """
         return [(getattr(policy, "_pyramid_multiauth_name", None), policy)
