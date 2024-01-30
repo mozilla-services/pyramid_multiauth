@@ -6,13 +6,11 @@ Pyramid authn policy that ties together multiple backends.
 """
 import sys
 
+from pyramid.authorization import Authenticated, Everyone
+from pyramid.interfaces import PHASE2_CONFIG, IAuthenticationPolicy, ISecurityPolicy
+from pyramid.security import LegacySecurityPolicy
 from zope.interface import implementer
 
-from pyramid.interfaces import (
-    IAuthenticationPolicy, ISecurityPolicy, PHASE2_CONFIG
-)
-from pyramid.authorization import Everyone, Authenticated
-from pyramid.security import LegacySecurityPolicy
 
 __ver_major__ = 0
 __ver_minor__ = 9
@@ -40,6 +38,7 @@ class MultiAuthPolicySelected(object):
             print("We selected policy %s" % event.policy)
 
     """
+
     def __init__(self, policy, request, userid=None):
         self.policy = policy
         self.policy_name = getattr(policy, "_pyramid_multiauth_name", None)
@@ -80,9 +79,7 @@ class MultiAuthenticationPolicy(object):
         for policy in self._policies:
             userid = policy.authenticated_userid(request)
             if userid is not None:
-                request.registry.notify(MultiAuthPolicySelected(policy,
-                                                                request,
-                                                                userid))
+                request.registry.notify(MultiAuthPolicySelected(policy, request, userid))
 
                 if self._callback is None:
                     break
@@ -122,9 +119,7 @@ class MultiAuthenticationPolicy(object):
                 userid = policy.authenticated_userid(request)
                 if userid is None:
                     continue
-                request.registry.notify(MultiAuthPolicySelected(policy,
-                                                                request,
-                                                                userid))
+                request.registry.notify(MultiAuthPolicySelected(policy, request, userid))
                 groups = self._callback(userid, request)
                 if groups is not None:
                     break
@@ -163,8 +158,9 @@ class MultiAuthenticationPolicy(object):
         This may be useful to introspect the configured policies, and their
         respective name defined in configuration.
         """
-        return [(getattr(policy, "_pyramid_multiauth_name", None), policy)
-                for policy in self._policies]
+        return [
+            (getattr(policy, "_pyramid_multiauth_name", None), policy) for policy in self._policies
+        ]
 
     def get_policy(self, name_or_class):
         """Get one of the contained authentication policies, by name or class.
@@ -236,8 +232,9 @@ def includeme(config):
     # Hook up a default AuthorizationPolicy.
     # Get the authorization policy from config if present.
     # Default ACLAuthorizationPolicy is usually what you want.
-    authz_class = settings.get("multiauth.authorization_policy",
-                               "pyramid.authorization.ACLAuthorizationPolicy")
+    authz_class = settings.get(
+        "multiauth.authorization_policy", "pyramid.authorization.ACLAuthorizationPolicy"
+    )
     authz_policy = config.maybe_dotted(authz_class)()
     # If the app configures one explicitly then this will get overridden.
     # In autocommit mode this needs to be done before setting the authn policy.
@@ -269,8 +266,9 @@ def includeme(config):
             try:
                 factory = policy_factory_from_module(config, policy_name)
             except ImportError:
-                err = "pyramid_multiauth: policy %r has no settings "\
-                      "and is not importable" % (policy_name,)
+                err = "pyramid_multiauth: policy %r has no settings " "and is not importable" % (
+                    policy_name,
+                )
                 raise ValueError(err)
             policy_factories.append((factory, policy_name, {}))
     # OK.  We now have a list of callbacks which need to be called at
@@ -364,7 +362,7 @@ def get_policy_definitions(settings):
         if not name.startswith("multiauth.policy."):
             continue
         value = settings[name]
-        name = name[len("multiauth.policy."):]
+        name = name[len("multiauth.policy.") :]
         policy_name, setting_name = name.split(".", 1)
         if policy_name not in policy_definitions:
             policy_definitions[policy_name] = {}
