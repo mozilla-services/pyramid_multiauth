@@ -33,4 +33,8 @@ jobs:
         run: make test
 
       - name: Coveralls
-        uses: coverallsapp/github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install tomli coveralls
+          coveralls --service=github
