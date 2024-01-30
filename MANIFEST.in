@@ -1,6 +1,0 @@
-include CONTRIBUTORS.txt
-include LICENSE
-include CHANGES.txt
-include README.rst
-include CODE_OF_CONDUCT.md
-include tox.ini
