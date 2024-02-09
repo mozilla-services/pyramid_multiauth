@@ -1,38 +1,40 @@
-on:
-  push:
-    branches:
-      - master
-  pull_request:
+on: pull_request
 
-name: Unit Testing
+name: Tests
 jobs:
-  chore:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+
+      - name: Run linting and formatting checks
+        run: make lint
+
+  unit-tests:
     name: Unit Tests
+    needs: lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toxenv: [py37, py38, py39, flake8]
-        include:
-          - toxenv: py37
-            python-version: "3.7"
-          - toxenv: py38
-            python-version: "3.8"
-          - toxenv: py39
-            python-version: "3.9"
-          - toxenv: flake8
-            python-version: "3.X"
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
 
-      - name: Install dependencies
-        run: |
-          pip install tox
+      - name: Run unit tests
+        run: make test
 
-      - name: Run Tox
+      - name: Coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tox -e ${{ matrix.toxenv }}
+          pip install tomli coveralls
+          coveralls --service=github
