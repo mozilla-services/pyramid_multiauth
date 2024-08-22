@@ -10,8 +10,9 @@ from pyramid.exceptions import Forbidden
 from pyramid.interfaces import IAuthenticationPolicy, IAuthorizationPolicy, ISecurityPolicy
 from pyramid.security import LegacySecurityPolicy
 from pyramid.testing import DummyRequest
-from pyramid_multiauth import MultiAuthenticationPolicy
 from zope.interface import implementer
+
+from pyramid_multiauth import MultiAuthenticationPolicy
 
 
 #  Here begins various helper classes and functions for the tests.
@@ -171,6 +172,7 @@ class MultiAuthPolicyTests(unittest.TestCase):
 
     def test_policy_selected_event(self):
         from pyramid.testing import testConfig
+
         from pyramid_multiauth import MultiAuthPolicySelected
 
         policies = [TestAuthnPolicy2(), TestAuthnPolicy3()]
