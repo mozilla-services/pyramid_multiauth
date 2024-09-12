@@ -4,6 +4,7 @@
 """
 Pyramid authn policy that ties together multiple backends.
 """
+
 import sys
 
 from pyramid.authorization import Authenticated, Everyone
