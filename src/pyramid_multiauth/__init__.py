@@ -267,7 +267,7 @@ def includeme(config):
             try:
                 factory = policy_factory_from_module(config, policy_name)
             except ImportError:
-                err = "pyramid_multiauth: policy %r has no settings " "and is not importable" % (
+                err = "pyramid_multiauth: policy %r has no settings and is not importable" % (
                     policy_name,
                 )
                 raise ValueError(err)
