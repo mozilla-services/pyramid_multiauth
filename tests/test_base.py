@@ -169,9 +169,9 @@ class MultiAuthPolicyTests(unittest.TestCase):
     def test_includeme_uses_acl_authorization_by_default(self):
         self.config.include("pyramid_multiauth")
         self.config.commit()
-        policy = self.config.registry.getUtility(IAuthorizationPolicy)
-        expected = ACLAuthorizationPolicy
-        self.assertTrue(isinstance(policy, expected))
+        security = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertIsInstance(security, MultiAuthSecurityPolicy)
+        self.assertIsInstance(security._helper, ACLAuthorizationPolicy)
 
     def test_includeme_reads_authorization_from_settings(self):
         self.config.add_settings(
@@ -179,8 +179,8 @@ class MultiAuthPolicyTests(unittest.TestCase):
         )
         self.config.include("pyramid_multiauth")
         self.config.commit()
-        policy = self.config.registry.getUtility(IAuthorizationPolicy)
-        self.assertTrue(isinstance(policy, TestAuthzPolicyCustom))
+        security = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertIsInstance(security._helper, AuthzPolicyAlwaysPermits)
 
     def test_includeme_by_module(self):
         self.config.add_settings(
@@ -194,12 +194,12 @@ class MultiAuthPolicyTests(unittest.TestCase):
         )
         self.config.include("pyramid_multiauth")
         self.config.commit()
-        policy = self.config.registry.getUtility(IAuthenticationPolicy)
+        policy = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertIsInstance(policy, MultiAuthSecurityPolicy)
         self.assertEqual(policy._callback, customgroupfinder)
         self.assertEqual(len(policy._policies), 3)
         # Check that they stack correctly.
         request = DummyRequest()
-        self.assertEqual(policy.unauthenticated_userid(request), "test2")
         self.assertEqual(policy.authenticated_userid(request), "test3")
         # Check that the forbidden view gets invoked.
         self.config.add_route("index", path="/")
@@ -225,13 +225,13 @@ class MultiAuthPolicyTests(unittest.TestCase):
         )
         self.config.include("pyramid_multiauth")
         self.config.commit()
-        policy = self.config.registry.getUtility(IAuthenticationPolicy)
+        policy = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertIsInstance(policy, MultiAuthSecurityPolicy)
         self.assertEqual(policy._callback, customgroupfinder)
         self.assertEqual(len(policy._policies), 3)
         self.assertEqual(policy._policies[1].foo, "bar")
         # Check that they stack correctly.
         request = DummyRequest()
-        self.assertEqual(policy.unauthenticated_userid(request), "test2")
         self.assertEqual(policy.authenticated_userid(request), "test3")
         # Check that the forbidden view gets invoked.
         self.config.add_route("index", path="/")
@@ -267,7 +267,8 @@ class MultiAuthPolicyTests(unittest.TestCase):
         )
         self.config.include("pyramid_multiauth")
         self.config.commit()
-        policy = self.config.registry.getUtility(IAuthenticationPolicy)
+        policy = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertIsInstance(policy, MultiAuthSecurityPolicy)
         # Test getting policies by name.
         self.assertTrue(isinstance(policy.get_policy("policy1"), AuthnPolicy2))
         self.assertTrue(isinstance(policy.get_policy("policy2"), AuthnPolicy3))
@@ -288,7 +289,8 @@ class MultiAuthPolicyTests(unittest.TestCase):
         )
         self.config.include("pyramid_multiauth")
         self.config.commit()
-        policy = self.config.registry.getUtility(IAuthenticationPolicy)
+        policy = self.config.registry.getUtility(ISecurityPolicy)
+        self.assertIsInstance(policy, MultiAuthSecurityPolicy)
         policies = policy.get_policies()
         expected_result = [
             ("tests.support.includeme1", AuthnPolicy1),
@@ -304,12 +306,23 @@ class MultiAuthPolicyTests(unittest.TestCase):
         self.config.include("pyramid_multiauth")
         self.config.commit()
 
-        authn = self.config.registry.getUtility(IAuthenticationPolicy)
-        self.assertTrue(isinstance(authn, MultiAuthenticationPolicy), authn)
+        # IAuthenticationPolicy is no longer registered (MultiAuthSecurityPolicy takes over).
+        authn = self.config.registry.queryUtility(IAuthenticationPolicy)
+        self.assertIsNone(authn)
+        # IAuthorizationPolicy is still registered for backward compat with sub-policies.
         authz = self.config.registry.getUtility(IAuthorizationPolicy)
-        self.assertTrue(isinstance(authz, ACLAuthorizationPolicy), authz)
+        self.assertIsInstance(authz, ACLAuthorizationPolicy)
         security = self.config.registry.getUtility(ISecurityPolicy)
-        self.assertTrue(isinstance(security, LegacySecurityPolicy), security)
+        self.assertIsInstance(security, MultiAuthSecurityPolicy)
+
+    def test_deprecation_warning(self):
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            MultiAuthenticationPolicy([])
+        self.assertEqual(len(w), 1)
+        self.assertIs(w[0].category, DeprecationWarning)
 
     def test_custom_security(self):
         class CustomSecurity:
@@ -324,10 +337,6 @@ class MultiAuthPolicyTests(unittest.TestCase):
         self.config.set_security_policy(CustomSecurity())
         self.config.commit()
 
-        # Check that registered authentication and security are appropriate.
-        authn = self.config.registry.getUtility(IAuthenticationPolicy)
-        self.assertTrue(isinstance(authn, MultiAuthenticationPolicy))
-        authz = self.config.registry.getUtility(IAuthorizationPolicy)
-        self.assertTrue(isinstance(authz, ACLAuthorizationPolicy), authz)
+        # Check that the custom security policy is registered.
         security = self.config.registry.getUtility(ISecurityPolicy)
-        self.assertTrue(isinstance(security, CustomSecurity))
+        self.assertIsInstance(security, CustomSecurity)
