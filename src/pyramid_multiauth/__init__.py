@@ -257,14 +257,13 @@ class MultiAuthSecurityPolicy:
             if userid is None:
                 continue
             # User was authenticated successfully!
+            request.registry.notify(MultiAuthPolicySelected(policy, request, userid))
             if self._callback is None:
                 # No groups.
-                request.registry.notify(MultiAuthPolicySelected(policy, request, userid))
                 return MultiAuthIdentity(userid, [])
 
             groups = self._callback(userid, request)
             if groups is not None:
-                request.registry.notify(MultiAuthPolicySelected(policy, request, userid))
                 return MultiAuthIdentity(userid, groups)
         return None
 
