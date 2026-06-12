@@ -279,11 +279,17 @@ class MultiAuthSecurityPolicy:
         that only contribute extra principals), then adds the authenticated
         identity's userid and groups if present.
         """
-        principals = self._principals(request)
+        principals = self.effective_principals(request)
         return self._helper.permits(context, principals, permission)
 
-    def _principals(self, request):
-        """Gather (and cache per request) the full set of principals."""
+    def effective_principals(self, request):
+        """Return the full set of principals for this request.
+
+        This is the union of the extra principals contributed by every
+        sub-policy (e.g. IP-based principals) and, if a user is authenticated,
+        ``Authenticated``, the userid and its groups. The result is cached per
+        request.
+        """
         cached = getattr(request, "_multiauth_principals", self._NO_IDENTITY)
         if cached is not self._NO_IDENTITY:
             return cached
