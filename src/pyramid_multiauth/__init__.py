@@ -6,9 +6,15 @@ Pyramid authn policy that ties together multiple backends.
 """
 
 import sys
+import warnings
 
-from pyramid.authorization import Authenticated, Everyone
-from pyramid.interfaces import PHASE2_CONFIG, IAuthenticationPolicy, ISecurityPolicy
+from pyramid.authorization import ACLHelper, Authenticated, Everyone
+from pyramid.interfaces import (
+    PHASE2_CONFIG,
+    IAuthenticationPolicy,
+    IAuthorizationPolicy,
+    ISecurityPolicy,
+)
 from pyramid.security import LegacySecurityPolicy
 from zope.interface import implementer
 
@@ -47,6 +53,23 @@ class MultiAuthPolicySelected(object):
         self.userid = userid
 
 
+class MultiAuthIdentity:
+    """Identity for an authenticated user from the sub-policy stack.
+
+    Only created when a userid is found. Extra principals from sub-policies
+    that don't authenticate a user (e.g. IP-based) are handled separately
+    in ``permits()``.
+    """
+
+    def __init__(self, userid: str, groups: list[str] | None):
+        """
+        :param userid: Authenticated userid string.
+        :param groups:  list of groups from the groupfinder callback, or [].
+        """
+        self.userid = userid
+        self.groups = list(groups) if groups else []
+
+
 @implementer(IAuthenticationPolicy)
 class MultiAuthenticationPolicy(object):
     """Pyramid authentication policy for stacked authentication.
@@ -65,6 +88,12 @@ class MultiAuthenticationPolicy(object):
     """
 
     def __init__(self, policies, callback=None):
+        warnings.warn(
+            "MultiAuthenticationPolicy is deprecated. Use MultiAuthSecurityPolicy "
+            "and config.set_security_policy() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self._policies = policies
         self._callback = callback
 
@@ -185,6 +214,133 @@ class MultiAuthenticationPolicy(object):
         return None
 
 
+@implementer(ISecurityPolicy)
+class MultiAuthSecurityPolicy:
+    """Pyramid ISecurityPolicy for stacked authentication.
+
+    This is a pyramid security policy that stitches together other
+    IAuthenticationPolicy objects into a flexible auth stack, compatible
+    with Pyramid 2 security policies.
+
+    https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/security.html#writing-a-security-policy
+    """
+
+    # Sentinel to distinguish "no identity yet" from "not authenticated".
+    _NO_IDENTITY = object()
+
+    def __init__(self, policies, callback=None, authz_policy=None):
+        self._policies = policies
+        self._callback = callback
+        self._helper = authz_policy if authz_policy is not None else ACLHelper()
+
+    def identity(self, request):
+        """Return a ``MultiAuthIdentity`` for the first authenticated userid, or ``None``.
+
+        Iterates sub-policies in order, returning the first ``userid`` that passes
+        the optional ``groupfinder`` callback. Fires the ``MultiAuthPolicySelected`` event
+        when a policy succeeds.
+
+        The result is cached on the request, since ``permits()`` to avoid expensive
+        authentication work (eg. bcrypt, storage hit, JWT, ...) to be performed
+        multiple times per request.
+        """
+        cached = getattr(request, "_multiauth_identity", self._NO_IDENTITY)
+        if cached is not self._NO_IDENTITY:
+            return cached
+        identity = self._compute_identity(request)
+        request._multiauth_identity = identity
+        return identity
+
+    def _compute_identity(self, request):
+        for policy in self._policies:
+            userid = policy.authenticated_userid(request)
+            if userid is None:
+                continue
+            # User was authenticated successfully!
+            request.registry.notify(MultiAuthPolicySelected(policy, request, userid))
+            if self._callback is None:
+                # No groups.
+                return MultiAuthIdentity(userid, [])
+
+            groups = self._callback(userid, request)
+            if groups is not None:
+                return MultiAuthIdentity(userid, groups)
+        return None
+
+    def authenticated_userid(self, request):
+        identity = self.identity(request)
+        return identity.userid if identity is not None else None
+
+    def permits(self, request, context, permission):
+        """Check if the request is permitted to perform the action.
+
+        Collects principals from all sub-policies (for non-userid sub-policies
+        that only contribute extra principals), then adds the authenticated
+        identity's userid and groups if present.
+        """
+        principals = self.effective_principals(request)
+        return self._helper.permits(context, principals, permission)
+
+    def effective_principals(self, request):
+        """Return the full set of principals for this request.
+
+        This is the union of the extra principals contributed by every
+        sub-policy (e.g. IP-based principals) and, if a user is authenticated,
+        ``Authenticated``, the userid and its groups. The result is cached per
+        request.
+        """
+        cached = getattr(request, "_multiauth_principals", self._NO_IDENTITY)
+        if cached is not self._NO_IDENTITY:
+            return cached
+
+        principals = {Everyone}
+        for policy in self._policies:
+            for p in policy.effective_principals(request):
+                if p not in (Everyone, Authenticated):
+                    principals.add(p)
+
+        identity = self.identity(request)
+        if identity is not None:
+            principals.add(Authenticated)
+            principals.add(identity.userid)
+            principals.update(identity.groups)
+        request._multiauth_principals = principals
+        return principals
+
+    def remember(self, request, userid, **kwargs):
+        headers = []
+        for policy in self._policies:
+            headers.extend(policy.remember(request, userid, **kwargs))
+        return headers
+
+    def forget(self, request, **kwargs):
+        headers = []
+        for policy in self._policies:
+            # **kwargs not forwarded: old IAuthenticationPolicy.forget() has no **kwargs
+            headers.extend(policy.forget(request))
+        return headers
+
+    def get_policies(self):
+        """Get the list of contained authentication policies, as tuple of
+        name and instances.
+        """
+        return [
+            (getattr(policy, "_pyramid_multiauth_name", None), policy) for policy in self._policies
+        ]
+
+    def get_policy(self, name_or_class):
+        """Get one of the contained authentication policies, by name or class."""
+        for policy in self._policies:
+            if isinstance(name_or_class, basestring):
+                policy_name = getattr(policy, "_pyramid_multiauth_name", None)
+                if policy_name == name_or_class:
+                    return policy
+            else:
+                if isinstance(policy, name_or_class):
+                    return policy
+        return None
+
+
 def includeme(config):
     """Include pyramid_multiauth into a pyramid configurator.
 
@@ -212,7 +368,7 @@ def includeme(config):
         multiauth.policy.ipauth2.ipaddrs = 124.124.0.0/16
         multiauth.policy.ipauth2.userid = local2
 
-    This will configure a MultiAuthenticationPolicy with three policy objects.
+    This will configure a MultiAuthSecurityPolicy with three policy objects.
     The first two will be IPAuthenticationPolicy objects created by passing
     in the specified keyword arguments.  The third will be a BrowserID
     authentication policy just like you would get from executing:
@@ -237,9 +393,11 @@ def includeme(config):
         "multiauth.authorization_policy", "pyramid.authorization.ACLAuthorizationPolicy"
     )
     authz_policy = config.maybe_dotted(authz_class)()
-    # If the app configures one explicitly then this will get overridden.
-    # In autocommit mode this needs to be done before setting the authn policy.
-    config.set_authorization_policy(authz_policy)
+    # We register an IAuthorizationPolicy like in Pyramid 1.X. for backward compat
+    # because some authentication policies may still query it.
+    # We use ``registerUtility()`` instead of ``config.set_authorization_policy()``
+    # to avoid deprecation warnings.
+    config.registry.registerUtility(authz_policy, IAuthorizationPolicy)
     # Get the groupfinder from config if present.
     groupfinder = settings.get("multiauth.groupfinder", None)
     groupfinder = config.maybe_dotted(groupfinder)
@@ -288,8 +446,17 @@ def includeme(config):
                     policies.insert(0, policy)
 
     config.action(None, grab_policies, order=PHASE2_CONFIG)
-    authn_policy = MultiAuthenticationPolicy(policies, groupfinder)
-    config.set_authentication_policy(authn_policy)
+
+    # We register an IAuthenticationPolicy like in Pyramid 1.X. so that deferred actions
+    # of include() calls are suppressed via Pyramid's conflict resolution.
+    # Without this, those actions fire alongside our ISecurityPolicy registration
+    # and raise a ConfigurationError ("Cannot configure an authentication policy...
+    # with a configured security policy").
+    config.action(IAuthenticationPolicy, lambda: None, order=PHASE2_CONFIG)
+
+    # Now we set the main security policy of Pyramid 2.
+    security_policy = MultiAuthSecurityPolicy(policies, groupfinder, authz_policy)
+    config.set_security_policy(security_policy)
 
 
 def policy_factory_from_module(config, module):
@@ -307,6 +474,14 @@ def policy_factory_from_module(config, module):
     # That might have registered and commited a new policy object.
     policy = config.registry.queryUtility(IAuthenticationPolicy)
     if policy is not None and policy is not orig_policy:
+        # The module called config.commit() internally. Clean up: restore the
+        # original ``IAuthenticationPolicy``
+        config.registry.registerUtility(orig_policy, IAuthenticationPolicy)
+        # And any ```LegacySecurityPolicy`` side-effect that Pyramid did.
+        # (We manage both ourselves via ``MultiAuthSecurityPolicy``)
+        security = config.registry.queryUtility(ISecurityPolicy)
+        if isinstance(security, LegacySecurityPolicy):
+            config.registry.registerUtility(None, ISecurityPolicy)
         return lambda: policy
     # Or it might have set up a pending action to register one later.
     # Find the most recent IAuthenticationPolicy action, and grab
